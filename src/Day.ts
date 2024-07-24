@@ -2,6 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { Error, ErrorType } from "./Error";
 import {Lexer} from "./Lexer";
+import {Parser} from "./Parser";
 
 const scriptsPath = './scripts';
 
@@ -26,6 +27,14 @@ function compile(source: string, flag: string) {
         tokens.forEach(token => {
             console.log(token);
         });
+        return;
+    }
+
+    const parser = new Parser(tokens);
+    const ast = parser.parse();
+
+    if (flag === '-P') {
+        console.log(JSON.stringify(ast, null, 2));
         return;
     }
 

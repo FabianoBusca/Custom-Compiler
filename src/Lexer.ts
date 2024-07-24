@@ -1,25 +1,9 @@
-enum Tag {
-    EOF, PLUS, MINUS, TIMES, DIV, MOD, POW, INT_DIV,
-    INC, DEC, SELF_INC, SELF_DEC,
-    AND, OR, NOT, EQ, NE, GT, LT, GE, LE,
-    ASSIGN, LRP, RRP, LSP, RSP, LCP, RCP,
-    COMMA, DOT, QUOTE,
-    NUM, STR, BOOL, ARR,
-    ID, NUMBER, STRING, TEXT,
-    IF, ELSE, WHILE, FOR, RET, SWITCH, CASE, BREAK, DEFAULT,
-    CLASS, THIS, TRUE, FALSE, PRINT, READ, NULL, UNDERSCORE
-}
+import {Tag, Token} from "./Token";
 
-interface Token {
-    tag: Tag;
-    value: string;
-    line: number;
-    column: number;
-}
-
+// TODO unclosed comments are weird
 class LexerError extends Error {
-    constructor(message: string, public line: number, public column: number) {
-        super(`${message} at line ${line}, column ${column}`);
+    constructor(message: string, public line_number: number, public column: number, public line: string) {
+        super(`${message} at line ${line_number}, column ${column}:\n${line_number}: ${line}\n` + ' '.repeat(column + String(line_number).length + 2) + '~');
     }
 }
 
@@ -148,7 +132,7 @@ export class Lexer {
     }
 
     private error(message: string): never {
-        throw new LexerError(message, this.line, this.column);
+        throw new LexerError(message, this.line, this.column - 2, this.source.split('\n')[this.line - 1]);
     }
 
     private lexRCP(): void {
@@ -178,11 +162,9 @@ export class Lexer {
         this.advance();
         if (this.match('+')) {
             this.addToken(Tag.INC, '++');
-            this.advance();
         }
         else if (this.match('=')) {
             this.addToken(Tag.SELF_INC, '+=');
-            this.advance();
         }
         else this.addToken(Tag.PLUS, '+');
     }
@@ -191,11 +173,9 @@ export class Lexer {
         this.advance();
         if (this.match('-')) {
             this.addToken(Tag.DEC, '--');
-            this.advance();
         }
         else if (this.match('=')) {
             this.addToken(Tag.SELF_DEC, '-=');
-            this.advance();
         }
         else this.addToken(Tag.MINUS, '-');
     }
@@ -204,7 +184,6 @@ export class Lexer {
         this.advance();
         if (this.match('*')) {
             this.addToken(Tag.POW, '**');
-            this.advance();
         }
         else this.addToken(Tag.TIMES, '*');
     }
@@ -213,7 +192,6 @@ export class Lexer {
         this.advance();
         if (this.match('/')) {
             this.addToken(Tag.INT_DIV, '//');
-            this.advance();
         }
         else this.addToken(Tag.DIV, '/');
     }
@@ -222,7 +200,6 @@ export class Lexer {
         this.advance();
         if (this.match('=')) {
             this.addToken(Tag.GE, '>=');
-            this.advance();
         }
         else this.addToken(Tag.GT, '>');
     }
@@ -231,7 +208,6 @@ export class Lexer {
         this.advance();
         if (this.match('=')) {
             this.addToken(Tag.LE, '<=');
-            this.advance();
         }
         else if (this.match('<')) this.ignoreMultiComment();
         else this.addToken(Tag.LT, '<');
@@ -241,7 +217,6 @@ export class Lexer {
         this.advance();
         if (this.match('=')) {
             this.addToken(Tag.EQ, '==');
-            this.advance();
         }
         else this.addToken(Tag.ASSIGN, '=');
     }
@@ -250,7 +225,6 @@ export class Lexer {
         this.advance();
         if (this.match('=')) {
             this.addToken(Tag.NE, '!=');
-            this.advance();
         }
         else this.addToken(Tag.NOT, this.advance());
     }
@@ -270,7 +244,7 @@ export class Lexer {
         // Consume the closing "
         this.advance();
 
-        this.addToken(Tag.STRING, value);
+        this.addToken(Tag.TEXT, value);
     }
 
     private lexFString(): void {
