@@ -1,0 +1,47 @@
+<program> ::= <statement>*
+
+<statement> ::= <declaration> | <expression>
+
+<declaration> ::= <variable_declaration_assignment> | <function_declaration>
+
+<variable_declaration_assignment> ::= <type>? <identifier> (, <type>? <identifier>)* (ASSIGN | SELF_INC | SELF_DEC) <expression> (, <expression>)*
+
+<type> ::= (NUM | STR | BOOL) (LSP RSP)*
+
+<function_declaration> ::= (<type> (, <type>)* | UNDERSCORE) ASSIGN ID LRP (<type> ID (, <type> ID)*)? RRP LCP <statement>* RCP
+
+<expression> ::= <logical_or_expression>
+
+<logical_or_expression> ::= <logical_and_expression> (OR <logical_and_expression>)*
+
+<logical_and_expression> ::= <equality_expression> (AND <equality_expression>)*
+
+<equality_expression> ::= <relational_expression> (EQ | NE <relational_expression>)*
+
+<relational_expression> ::= <additive_expression> (LT | LE | GT | GE <additive_expression>)*
+
+<additive_expression> ::= <term> ((PLUS | MINUS) <term>)*
+
+<term> ::= <factor> ((MUL | DIV | INT_DIV | MOD) <factor>)*
+
+<factor> ::= <primary> (POW <primary>)* | NOT <factor>
+
+<primary> ::= <identifier> (INC | DEC)?
+            | NUMBER
+            | TEXT
+            | TRUE
+            | FALSE
+            | <f_string>
+            | <array>
+            | LRP <expression> RRP
+            | <function_call>
+
+<identifier> ::= ID (LSP <expression> RSP)* 
+
+<f_string> ::= QUOTE (TEXT | (TEXT? LCP <expression> RCP)*) QUOTE
+
+<array> ::= LSP (<expression> (COMMA <expression>)*)? RSP
+
+<function_call> ::= ID LRP <argument_list>? RRP
+
+<argument_list> ::= <expression> (COMMA <expression>)*[<primary>]?
