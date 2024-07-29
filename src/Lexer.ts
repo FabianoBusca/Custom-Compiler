@@ -17,7 +17,7 @@ export class Lexer {
 
     private static KEYWORDS: Map<string, Tag> = new Map([
         ['if', Tag.IF], ['else', Tag.ELSE], ['while', Tag.WHILE],
-        ['for', Tag.FOR], ['ret', Tag.RET], ['switch', Tag.SWITCH],
+        ['for', Tag.FOR], ['return', Tag.RETURN], ['switch', Tag.SWITCH],
         ['case', Tag.CASE], ['break', Tag.BREAK], ['default', Tag.DEFAULT],
         ['class', Tag.CLASS], ['this', Tag.THIS], ['true', Tag.TRUE],
         ['false', Tag.FALSE], ['print', Tag.PRINT], ['read', Tag.READ],

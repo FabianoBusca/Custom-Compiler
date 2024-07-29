@@ -11,8 +11,8 @@ export enum Tag {
     DEC,        // --
     SELF_INC,  // +=
     SELF_DEC,  // -=
-    AND,        // &&
-    OR,         // ||
+    AND,        // &
+    OR,         // |
     NOT,        // !
     EQ,         // ==
     NE,         // !=
@@ -33,7 +33,7 @@ export enum Tag {
     NUM,        // num
     STR,        // str
     BOOL,       // bool
-    ARR,        // arr
+    ARR,        // arr TODO: Remove
     ID,
     NUMBER,
     TEXT,
@@ -41,7 +41,7 @@ export enum Tag {
     ELSE,       // else
     WHILE,      // while
     FOR,        // for
-    RET,        // ret
+    RETURN,     // return
     SWITCH,     // switch
     CASE,       // case
     BREAK,      // break

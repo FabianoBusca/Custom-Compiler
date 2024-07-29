@@ -2,16 +2,22 @@
 export type NodeType =
     | 'Program'
     | 'Statement'
-    | 'VariableDeclarations'
+    | 'VariableOperations'
     | 'VariableDeclaration'
     | 'VariableAssignment'
+    | 'ClassDeclaration'
     | 'FunctionDeclaration'
     | 'SelfAssignment'
+    | 'IfStatement'
+    | 'WhileStatement'
+    | 'ForStatement'
     | 'Expression'
     | 'LogicalExpression'
     | 'BinaryExpression'
     | 'UnaryExpression'
     | 'FunctionCall'
+    | 'MemberFunctionCall'
+    | 'MemberAttribute'
     | 'Identifier'
     | 'Number'
     | 'String'
@@ -59,9 +65,9 @@ export interface Program extends ASTNode {
 }
 
 // Variable Declaration Interfaces
-export interface VariableDeclarations extends Statement {
-    kind: 'VariableDeclarations';
-    declarations: (VariableDeclaration | VariableAssignment)[];
+export interface VariableOperations extends Statement {
+    kind: 'VariableOperations';
+    operations: (VariableDeclaration | VariableAssignment)[];
     operator: Operator;
     values: Expression[];
 }
@@ -77,12 +83,42 @@ export interface VariableAssignment extends Statement {
     element: Identifier | ArrayElement;
 }
 
+// Class Declaration Interface
+export interface ClassDeclaration extends Statement {
+    kind: 'ClassDeclaration';
+    identifier: Identifier;
+    body: Statement[];
+}
+
 // Function Declaration Interface
 export interface FunctionDeclaration extends Statement {
     kind: 'FunctionDeclaration';
     returnTypes: string[];
     identifier: Identifier;
     parameters: VariableDeclaration[];
+    body: Statement[];
+}
+
+// If Statement Interface
+export interface IfStatement extends Statement {
+    kind: 'IfStatement';
+    condition: Expression;
+    body: Statement[];
+    elseBody: Statement[];
+}
+
+// While Statement Interface
+export interface WhileStatement extends Statement {
+    kind: 'WhileStatement';
+    condition: Expression;
+    body: Statement[];
+}
+
+// For Statement Interface
+export interface ForStatement extends Statement {
+    kind: 'ForStatement';
+    iterator: Identifier;
+    limit: Expression;
     body: Statement[];
 }
 
@@ -117,6 +153,20 @@ export interface FunctionCall extends Expression {
     kind: 'FunctionCall';
     identifier: Identifier;
     arguments: Expression[];
+}
+
+// Member Function Call Interface
+export interface MemberFunctionCall extends Expression {
+    kind: 'MemberFunctionCall';
+    member: Identifier;
+    function: FunctionCall;
+}
+
+// Member Attribute Interface
+export interface MemberAttribute extends Expression {
+    kind: 'MemberAttribute';
+    member: Identifier;
+    attribute: Expression;
 }
 
 // Identifier Interface

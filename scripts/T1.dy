@@ -7,23 +7,23 @@ str z = "World"
 bool w = true & false
 num[] a = [1, 2, 3]
 a[0] = 4
-<< print(y)
-num, str = func (num x, str y) {
+print(y)
+Dog, str = func (num x, str y) {
     print(y)
-    return 0, x
+    return(0, x)
 }
 _ = func() {
     print('Hello')
-} >>
+}
 _, num res = func(5, 'Hello')
-<< class Dog = {
+class Dog = {
     str name
     num age
-    Dog _ = (str name, num age) {
+    <<Dog = _(str name, num age) {
         this.name = name
         this.age = age
-    }
-    bark = () {
+    }>>
+    _ = bark() {
         print('Woof')
     }
 }
@@ -35,6 +35,6 @@ for (i, 5) {
 }
 for (i, a) {
     print(a)
-} >>
+}
 str s = "Hello World!"
 s = 'Result is {res}'

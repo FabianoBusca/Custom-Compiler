@@ -1,6 +1,6 @@
 <program> ::= <statement>*
 
-<statement> ::= <declaration> | <expression>
+<statement> ::= <declaration> | <expression> | 
 
 <declaration> ::= <variable_declaration_assignment> | <function_declaration>
 
@@ -42,6 +42,6 @@
 
 <array> ::= LSP (<expression> (COMMA <expression>)*)? RSP
 
-<function_call> ::= ID LRP <argument_list>? RRP
+<function_call> ::= (ID | PRINT | RETURN) LRP <argument_list>? RRP | READ LRP RRP
 
-<argument_list> ::= <expression> (COMMA <expression>)*[<primary>]?
+<argument_list> ::= <expression> (COMMA <expression>)*

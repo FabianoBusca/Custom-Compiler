@@ -1,30 +1,139 @@
-import {
-    ArrayElement,
-    ArrayNode,
-    BinaryExpression,
-    BooleanNode,
-    ClassDeclaration,
-    Expression,
-    ForStatement,
-    FString,
-    FunctionCall,
-    FunctionDeclaration,
-    Identifier,
-    IfStatement,
-    LogicalExpression,
-    LogicalOperator, MemberFunctionCall,
-    NumberNode,
-    Operator,
-    Program,
-    Statement,
-    StringNode,
-    UnaryExpression,
-    VariableAssignment,
-    VariableDeclaration,
-    VariableOperations,
-    WhileStatement
-} from "./AST";
+// Node Types
 import {Tag, Token} from "./Token";
+
+type NodeType =
+    | 'Program'
+    | 'Statement'
+    | 'VariableOperations'
+    | 'VariableDeclaration'
+    | 'VariableAssignment'
+    | 'FunctionDeclaration'
+    | 'SelfAssignment'
+    | 'Expression'
+    | 'LogicalExpression'
+    | 'BinaryExpression'
+    | 'UnaryExpression'
+    | 'FunctionCall'
+    | 'ReturnStatement'
+    | 'Identifier'
+    | 'Number'
+    | 'String'
+    | 'Boolean'
+    | 'F-String'
+    | 'Array'
+    | 'ArrayElement';
+
+type Operator =
+    | '+' | '-' | '*' | '/' | '//' | '%' | '**' | '++' | '--' | '!';
+
+type LogicalOperator =
+    | '&' | '|' | '==' | '!=' | '>' | '<' | '>=' | '<=' | '!';
+
+interface ASTNode {
+    kind: NodeType;
+}
+
+interface Statement extends ASTNode {}
+
+interface Program extends ASTNode {
+    kind: 'Program';
+    body: Statement[];
+}
+
+interface VariableOperations extends Statement {
+    kind: 'VariableOperations';
+    operations: (VariableDeclaration | VariableAssignment)[];
+    operator: Operator;
+    values: Expression[];
+}
+
+interface VariableDeclaration extends Statement {
+    kind: 'VariableDeclaration';
+    type: string;
+    identifier: Identifier;
+}
+
+interface VariableAssignment extends Statement {
+    kind: 'VariableAssignment';
+    element: Identifier | ArrayElement;
+}
+
+interface FunctionDeclaration extends Statement {
+    kind: 'FunctionDeclaration';
+    returnTypes: string[];
+    identifier: Identifier;
+    parameters: VariableDeclaration[];
+    body: Statement[];
+}
+
+interface Expression extends Statement {}
+
+interface LogicalExpression extends Expression {
+    kind: 'LogicalExpression';
+    operator: LogicalOperator;
+    left: Expression;
+    right: Expression;
+}
+
+interface BinaryExpression extends Expression {
+    kind: 'BinaryExpression';
+    left: Expression;
+    operator: Operator;
+    right: Expression;
+}
+
+interface UnaryExpression extends Expression {
+    kind: 'UnaryExpression';
+    operator: Operator;
+    base: Expression;
+}
+
+interface FunctionCall extends Expression {
+    kind: 'FunctionCall';
+    identifier: Identifier;
+    arguments: Expression[];
+}
+
+interface ReturnStatement extends Statement {
+    kind: 'ReturnStatement';
+    arguments: Expression[];
+}
+
+interface Identifier extends Expression {
+    kind: 'Identifier';
+    name: string;
+}
+
+interface NumberNode extends Expression {
+    kind: 'Number';
+    value: number;
+}
+
+interface StringNode extends Expression {
+    kind: 'String';
+    value: string;
+}
+
+interface BooleanNode extends Expression {
+    kind: 'Boolean';
+    value: boolean;
+}
+
+interface FString extends Expression {
+    kind: 'F-String';
+    value: Expression[];
+}
+
+interface ArrayNode extends Expression {
+    kind: 'Array';
+    elements: Expression[];
+}
+
+interface ArrayElement extends Expression {
+    kind: 'ArrayElement';
+    array: Identifier;
+    indices: Expression[];
+}
 
 class ParserError extends Error {
     constructor(message: string, public line_number: number, public column: number, public line: string) {
@@ -32,7 +141,7 @@ class ParserError extends Error {
     }
 }
 
-export class Parser {
+class Parser {
     private index: number = 0;
 
     constructor(private readonly tokens: Token[]) {}
@@ -73,7 +182,7 @@ export class Parser {
     }
 
     private parseStatement(): Statement {
-        if (this.check(Tag.NUM, Tag.STR, Tag.BOOL, Tag.UNDERSCORE, Tag.CLASS)) {
+        if (this.check(Tag.NUM, Tag.STR, Tag.BOOL, Tag.UNDERSCORE)) {
             return this.parseDeclaration();
         }
         if (this.check(Tag.PRINT, Tag.READ, Tag.RETURN)) {
@@ -82,30 +191,16 @@ export class Parser {
         if (this.check(Tag.ID)) {
             return this.parseIdentifierBasedStatement();
         }
-        if (this.check(Tag.THIS)) {
-            return this.parseThisStatement();
-        }
-        if (this.check(Tag.IF)) {
-            return this.parseIfStatement();
-        }
-        if (this.check(Tag.WHILE)) {
-            return this.parseWhileStatement();
-        }
-        if (this.check(Tag.FOR)) {
-            return this.parseForStatement();
-        }
         return this.error('Unexpected token');
     }
 
     private parseIdentifierBasedStatement(): Statement {
-        let nextTag = this.peek(1).tag;
+        const nextTag = this.peek(1).tag;
         switch (nextTag) {
             case Tag.ASSIGN:
             case Tag.SELF_INC:
             case Tag.SELF_DEC:
             case Tag.COMMA:
-            case Tag.ID:
-                return this.parseDeclaration();
             case Tag.LSP:
                 return this.parseDeclaration();
             default:
@@ -122,75 +217,34 @@ export class Parser {
         if (this.check(Tag.UNDERSCORE)) {
             return this.parseUnderscoreDeclaration();
         }
-        if (this.check(Tag.CLASS)) {
-            return this.parseClassDeclaration();
-        }
-        let i = 0;
-        while (true) {
-            const tag = this.peek(i).tag;
-            // case (custom) typed declaration
-            // ID ID
-            if (tag === Tag.ID || tag === Tag.NUM || tag === Tag.STR || tag === Tag.BOOL) {
-                let j = i + 1;
-                // skip array brackets
-                while (this.peek(j).tag === Tag.LSP || this.peek(j).tag === Tag.RSP) {
-                    j++;
-                }
-                if (this.peek(j).tag === Tag.ID) {
-                    return this.parseVariableDeclaration();
-                }
-            }
-            if (tag === Tag.ASSIGN || Tag === Tag.EOF) break;
-            i++;
-        }
-        // skip equal
-        i++
-        // case assignment
-        // ... = 5
-        if (this.peek(i).tag !== Tag.ID && this.peek(i).tag !== Tag.UNDERSCORE) {
-            return this.parseVariableDeclaration();
-        }
-        // skip identifier
-        i++
-        // case assignment to identifier
-        // ... = x
-        if (this.peek(i).tag !== Tag.LRP) {
-            return this.parseVariableDeclaration();
-        }
-        while (this.peek(i).tag !== Tag.RRP) {
-            i++;
-        }
-        // skip closing bracket
-        i++
-        // case assignment to function
-        // ... = foo()
-        if (this.peek(i).tag !== Tag.LCP) {
-            return this.parseVariableDeclaration();
-        }
-        // case function declaration
-        // ... = foo() {}
-        return this.parseFunctionDeclaration();
-    }
-    private parseUnderscoreDeclaration(): Statement {
-        if (this.peek(1).tag === Tag.ASSIGN) {
+
+        if (this.isMultipleDeclaration()) {
             return this.parseFunctionDeclaration();
         }
-        if (this.peek(1).tag === Tag.COMMA) {
+
+        return this.parseVariableDeclaration();
+    }
+
+    private isMultipleDeclaration(): boolean {
+        let i = 0;
+        while (true) {
+            const token = this.peek(i);
+            if (token.tag === Tag.ID) return false;
+            if (token.tag === Tag.COMMA) return true;
+            if (token.tag === Tag.EOF) return false;
+            i++;
+        }
+    }
+
+    private parseUnderscoreDeclaration(): Statement {
+        this.advance(); // Skip underscore
+        if (this.check(Tag.ASSIGN)) {
+            return this.parseVariableAssignment();
+        }
+        if (this.check(Tag.COMMA)) {
             return this.parseVariableDeclaration();
         }
         return this.error('Unexpected token after underscore');
-    }
-
-    private parseClassDeclaration(): ClassDeclaration {
-        this.advance(); // Skip CLASS
-        if (!this.check(Tag.ID)) this.error('Expected class name');
-        const identifier: Identifier = { kind: 'Identifier', name: this.advance().value };
-        const declaration: ClassDeclaration = { kind: 'ClassDeclaration', identifier,  body: [] };
-
-        if (!this.match(Tag.ASSIGN)) this.error('Expected equal sign');
-        declaration.body = this.parseBlock();
-
-        return declaration;
     }
 
     private parseVariableDeclaration(): VariableOperations {
@@ -234,7 +288,7 @@ export class Parser {
     private parseFunctionDeclaration(): FunctionDeclaration {
         const returnTypes = this.parseReturnTypes();
         if (!this.match(Tag.ASSIGN)) this.error('Expected equal sign');
-        if (!this.check(Tag.ID, Tag.UNDERSCORE)) this.error('Expected identifier');
+        if (!this.check(Tag.ID)) this.error('Expected identifier');
 
         const identifier: Identifier = { kind: 'Identifier', name: this.advance().value };
         if (!this.match(Tag.LRP)) this.error('Expected opening parenthesis');
@@ -257,7 +311,7 @@ export class Parser {
 
         const returnTypes: string[] = [];
         do {
-            if (!this.check(Tag.NUM, Tag.STR, Tag.BOOL, Tag.ID)) this.error('Expected return type');
+            if (!this.check(Tag.NUM, Tag.STR, Tag.BOOL)) this.error('Expected return type');
             let type = this.advance().value;
             while (this.match(Tag.LSP)) {
                 type += '[]';
@@ -328,7 +382,7 @@ export class Parser {
     }
 
     private parsePrimaryExpression(): Expression {
-        if (this.check(Tag.ID, Tag.UNDERSCORE, Tag.PRINT, Tag.READ, Tag.RETURN)) return this.parseIdentifierOrFunctionCall();
+        if (this.check(Tag.ID, Tag.PRINT, Tag.READ, Tag.RETURN)) return this.parseIdentifierOrFunctionCall();
         if (this.check(Tag.NUMBER)) return this.parseNumberLiteral();
         if (this.check(Tag.TEXT)) return this.parseStringLiteral();
         if (this.check(Tag.TRUE, Tag.FALSE)) return this.parseBooleanLiteral();
@@ -340,9 +394,6 @@ export class Parser {
 
     private parseIdentifierOrFunctionCall(): Expression {
         const identifier: Identifier = { kind: 'Identifier', name: this.advance().value };
-        if (this.check(Tag.DOT)) {
-            return this.parseMemberFunctionCall(identifier);
-        }
         if (this.check(Tag.LRP)) {
             return this.parseFunctionCall(identifier);
         }
@@ -364,22 +415,14 @@ export class Parser {
         return call;
     }
 
-    private parseMemberFunctionCall(member: Identifier): Expression {
-        this.advance(); // Skip DOT
-        const identifier: Identifier = { kind: 'Identifier', name: this.advance().value };
-        const func = this.parseFunctionCall(identifier);
-        return { kind: 'MemberFunctionCall', member, function: func } as MemberFunctionCall;
-    }
-
     private parsePostfix(identifier: Identifier): Expression {
-        let base: Expression = identifier;
         if (this.check(Tag.LSP)) {
             return this.parseArrayElement(identifier);
         }
         return {
             kind: 'UnaryExpression',
             operator: this.advance().tag as Operator,
-            base
+            base: identifier
         } as UnaryExpression;
     }
 
@@ -473,65 +516,5 @@ export class Parser {
     private isLogicalOperator(operator: Tag): boolean {
         const logicalOperators : Tag[] = [Tag.AND, Tag.OR, Tag.EQ, Tag.NE, Tag.GT, Tag.LT, Tag.GE, Tag.LE];
         return logicalOperators.includes(operator);
-    }
-
-    private parseIfStatement(): IfStatement {
-        this.advance(); // Skip IF
-        const condition = this.parseCondition();
-        const body = this.parseBlock();
-
-        let elseBody: Statement[] | null = null;
-        if (this.match(Tag.ELSE)) {
-            elseBody = this.parseBlock();
-        }
-
-        return { kind: 'IfStatement', condition, body, elseBody };
-    }
-
-    private parseWhileStatement(): WhileStatement {
-        this.advance(); // Skip WHILE
-        const condition = this.parseCondition();
-        const body = this.parseBlock();
-
-        return { kind: 'WhileStatement', condition, body };
-    }
-
-    private parseForStatement(): ForStatement {
-        this.advance(); // Skip FOR
-        if (!this.match(Tag.LRP)) this.error('Expected opening parenthesis');
-
-        const iterator = this.parseArrayOrIdentifier() as Identifier;
-        if (!this.match(Tag.COMMA)) this.error('Expected comma');
-
-        const limit = this.parseExpression();
-        if (!this.match(Tag.RRP)) this.error('Expected closing parenthesis');
-
-        const body = this.parseBlock();
-
-        return { kind: 'ForStatement', iterator, limit, body };
-    }
-
-    private parseCondition(): Expression {
-        if (!this.match(Tag.LRP)) this.error('Expected opening parenthesis');
-        const condition = this.parseExpression();
-        if (!this.match(Tag.RRP)) this.error('Expected closing parenthesis');
-        return condition;
-    }
-
-    private parseBlock(): Statement[] {
-        if (!this.match(Tag.LCP)) this.error('Expected opening curly brace');
-
-        const body: Statement[] = [];
-        while (!this.check(Tag.RCP)) {
-            body.push(this.parseStatement());
-        }
-
-        if (!this.match(Tag.RCP)) this.error('Expected closing curly brace');
-
-        return body;
-    }
-
-    private parseThisStatement() {
-        return undefined;
     }
 }
