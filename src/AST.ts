@@ -50,21 +50,21 @@ export type LogicalOperator =
     | '<='
     | '!';
 
-// Base Interface for AST Nodes
+// Base interface for AST Nodes
 export interface ASTNode {
     kind: NodeType;
 }
 
-// Statement Interface
+// Statement export interface
 export interface Statement extends ASTNode {}
 
-// Program Interface
+// Program export interface
 export interface Program extends ASTNode {
     kind: 'Program';
     body: Statement[];
 }
 
-// Variable Declaration Interfaces
+// Variable Declaration export interfaces
 export interface VariableOperations extends Statement {
     kind: 'VariableOperations';
     operations: (VariableDeclaration | VariableAssignment)[];
@@ -80,17 +80,17 @@ export interface VariableDeclaration extends Statement {
 
 export interface VariableAssignment extends Statement {
     kind: 'VariableAssignment';
-    element: Identifier | ArrayElement;
+    element: Expression;
 }
 
-// Class Declaration Interface
+// Class Declaration export interface
 export interface ClassDeclaration extends Statement {
     kind: 'ClassDeclaration';
     identifier: Identifier;
     body: Statement[];
 }
 
-// Function Declaration Interface
+// Function Declaration export interface
 export interface FunctionDeclaration extends Statement {
     kind: 'FunctionDeclaration';
     returnTypes: string[];
@@ -99,7 +99,7 @@ export interface FunctionDeclaration extends Statement {
     body: Statement[];
 }
 
-// If Statement Interface
+// If Statement export interface
 export interface IfStatement extends Statement {
     kind: 'IfStatement';
     condition: Expression;
@@ -107,14 +107,14 @@ export interface IfStatement extends Statement {
     elseBody: Statement[];
 }
 
-// While Statement Interface
+// While Statement export interface
 export interface WhileStatement extends Statement {
     kind: 'WhileStatement';
     condition: Expression;
     body: Statement[];
 }
 
-// For Statement Interface
+// For Statement export interface
 export interface ForStatement extends Statement {
     kind: 'ForStatement';
     iterator: Identifier;
@@ -122,10 +122,10 @@ export interface ForStatement extends Statement {
     body: Statement[];
 }
 
-// Expression Interface
+// Expression export interface
 export interface Expression extends Statement {}
 
-// Logical Expression Interface
+// Logical Expression export interface
 export interface LogicalExpression extends Expression {
     kind: 'LogicalExpression';
     operator: LogicalOperator;
@@ -133,7 +133,7 @@ export interface LogicalExpression extends Expression {
     right: Expression;
 }
 
-// Binary Expression Interface
+// Binary Expression export interface
 export interface BinaryExpression extends Expression {
     kind: 'BinaryExpression';
     left: Expression;
@@ -141,41 +141,41 @@ export interface BinaryExpression extends Expression {
     right: Expression;
 }
 
-// Unary Expression Interface
+// Unary Expression export interface
 export interface UnaryExpression extends Expression {
     kind: 'UnaryExpression';
     operator: Operator;
     base: Expression;
 }
 
-// Function Call Interface
+// Function Call export interface
 export interface FunctionCall extends Expression {
     kind: 'FunctionCall';
     identifier: Identifier;
     arguments: Expression[];
 }
 
-// Member Function Call Interface
+// Member Function Call export interface
 export interface MemberFunctionCall extends Expression {
     kind: 'MemberFunctionCall';
     member: Identifier;
     function: FunctionCall;
 }
 
-// Member Attribute Interface
+// Member Attribute export interface
 export interface MemberAttribute extends Expression {
     kind: 'MemberAttribute';
     member: Identifier;
     attribute: Expression;
 }
 
-// Identifier Interface
+// Identifier export interface
 export interface Identifier extends Expression {
     kind: 'Identifier';
     name: string;
 }
 
-// Literal Node Interfaces
+// Literal Node export interfaces
 export interface NumberNode extends Expression {
     kind: 'Number';
     value: number;
@@ -197,13 +197,13 @@ export interface FString extends Expression {
     value: Expression[];
 }
 
-// Array Node Interface
+// Array Node export interface
 export interface ArrayNode extends Expression {
     kind: 'Array';
     elements: Expression[];
 }
 
-// Array Element Interface
+// Array Element export interface
 export interface ArrayElement extends Expression {
     kind: 'ArrayElement';
     array: Identifier;

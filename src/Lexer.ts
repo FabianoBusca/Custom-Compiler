@@ -8,6 +8,8 @@ class LexerError extends Error {
 }
 
 export class Lexer {
+    // TODO: source as string[]
+    // TODO: extract error class
     private readonly source: string;
     private position: number = 0;
     private isString: boolean = false;

@@ -2,7 +2,8 @@ import * as fs from "fs";
 import * as path from "path";
 import { Error, ErrorType } from "./Error";
 import {Lexer} from "./Lexer";
-import {Parser} from "./Parser";
+//import {Parser} from "./Parser";
+import {Parser} from "./Simple";
 
 const scriptsPath = './scripts';
 
@@ -20,6 +21,7 @@ function readFile(filePath: string, content: { src: string }): Promise<Error> {
 }
 
 function compile(source: string, flag: string) {
+    source = source.replace('\n\r', '\n');
     const lexer = new Lexer(source);
     const tokens = lexer.tokenize();
 
@@ -30,7 +32,7 @@ function compile(source: string, flag: string) {
         return;
     }
 
-    const parser = new Parser(tokens);
+    const parser = new Parser(tokens, source.split('\n'));
     const ast = parser.parse();
 
     if (flag === '-P') {
