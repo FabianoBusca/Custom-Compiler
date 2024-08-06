@@ -1,2 +1,11 @@
-num, str[][] = func(num x, str y) {}
-x, y, k z = foo(5, a[0])
+class Dog = {
+    str name
+    num age
+    Dog = _(str name, num age) {
+        this.name = name
+        this.age = age
+    }
+    _ = bark() {
+        print('Woof')
+    }
+}

@@ -1,6 +1,6 @@
 import {Tag, Token} from "./Token";
 
-type NodeType = 'Program' | 'Statement' | 'VariableOperations' | 'VariableDeclaration' | 'VariableAssignment' | 'Identifier' | 'FunctionDeclaration' | 'MemberFunctionCall' | 'MemberAttribute' | 'UnaryExpression' | 'ArrayElement' | 'FunctionCall' | 'LogicalExpression' | 'BinaryExpression' | 'Number' | 'String' | 'Boolean' | 'F-String' | 'Array';
+type NodeType = 'Program' | 'Statement' | 'IfStatement' | 'WhileStatement' | 'ForStatement' | 'VariableOperations' | 'VariableDeclaration' | 'VariableAssignment' | 'Identifier' | 'FunctionDeclaration' | 'ClassDeclaration' | 'MemberFunctionCall' | 'MemberAttribute' | 'UnaryExpression' | 'ArrayElement' | 'FunctionCall' | 'LogicalExpression' | 'BinaryExpression' | 'Number' | 'String' | 'Boolean' | 'F-String' | 'Array';
 interface ASTNode {
     kind: NodeType;
 }
@@ -9,11 +9,33 @@ interface Program extends ASTNode {
     kind: 'Program';
     body: Statement[];
 }
+interface IfStatement extends Statement {
+    kind: 'IfStatement';
+    condition: Expression;
+    body: Statement[];
+    elseBody: Statement[];
+}
+interface WhileStatement extends Statement {
+    kind: 'WhileStatement';
+    condition: Expression;
+    body: Statement[];
+}
+interface ForStatement extends Statement {
+    kind: 'ForStatement';
+    iterator: Identifier;
+    limit: Expression;
+    body: Statement[];
+}
 interface FunctionDeclaration extends Statement {
     kind: 'FunctionDeclaration';
     returnTypes: string[];
     identifier: Identifier;
     parameters: VariableDeclaration[];
+    body: Statement[];
+}
+interface ClassDeclaration extends Statement {
+    kind: 'ClassDeclaration';
+    identifier: Identifier;
     body: Statement[];
 }
 interface Expression extends Statement {}
@@ -136,26 +158,29 @@ export class Parser {
         throw new ParserError(message, token.line, token.column, this.source[token.line - 1]);
     }
     private parseStatement(): Statement {
-        if (this.check(Tag.NUM, Tag.STR, Tag.BOOL, Tag.UNDERSCORE, Tag.ID)) {
+        if (this.check(Tag.NUM, Tag.STR, Tag.BOOL, Tag.UNDERSCORE, Tag.THIS, Tag.ID)) {
             return this.parseDeclaration([]);
         }
         if (this.check(Tag.PRINT, Tag.READ, Tag.RETURN)) {
-            throw new Error("Not implemented");
+            return this.parseBuiltInFunctionCall();
         }
         if (this.check(Tag.CLASS)) {
-            throw new Error("Not implemented");
+            return this.parseClassDeclaration();
         }
         if (this.check(Tag.THIS)) {
             throw new Error("Not implemented");
         }
-        if (this.check(Tag.IF)) {
+        if (this.check(Tag.SWITCH)) {
             throw new Error("Not implemented");
+        }
+        if (this.check(Tag.IF)) {
+            return this.parseIfStatement();
         }
         if (this.check(Tag.WHILE)) {
-            throw new Error("Not implemented");
+            return this.parseWhileStatement();
         }
         if (this.check(Tag.FOR)) {
-            throw new Error("Not implemented");
+            return this.parseForStatement();
         }
 
         this.error("Unexpected token");
@@ -164,6 +189,22 @@ export class Parser {
         const token: Token = this.advance();
         const tag: Tag = token.tag;
         const id: string = token.value;
+
+        if (tag === Tag.UNDERSCORE) {
+            elements.push(id);
+            if (this.check(Tag.COMMA)) {
+                return this.parseVariableDeclaration(this.createVariableAssignments(elements));
+            }
+
+            if (this.check(Tag.ASSIGN)) {
+                this.advance(); // Skip ASSIGN
+                const identifier: Identifier = { kind: "Identifier", name: this.advance().value };
+                this.advance(); // Skip LRP
+                return this.parseFuncDec(identifier, elements);
+            }
+
+            return this.error("Unexpected token");
+        }
 
         if (tag === Tag.ID && this.check(Tag.LRP)) {
             return this.handleFunctionCall(id);
@@ -190,7 +231,8 @@ export class Parser {
         }
 
         if (this.check(Tag.ASSIGN)) {
-            return this.handleAssignment(token, elements);
+            elements.push(id);
+            return this.handleAssignment(elements);
         }
 
         this.error("Unexpected token");
@@ -475,7 +517,7 @@ export class Parser {
     private parsePrimaryExpression(): Expression {
         let expr: Expression;
 
-        if (this.check(Tag.ID, Tag.UNDERSCORE, Tag.PRINT, Tag.READ, Tag.RETURN)) {
+        if (this.check(Tag.ID, Tag.UNDERSCORE, Tag.THIS, Tag.PRINT, Tag.READ, Tag.RETURN)) {
             expr = this.parseIdentifierOrFunctionCall();
         } else if (this.check(Tag.NUMBER)) {
             expr = this.parseNumberLiteral();
@@ -584,7 +626,6 @@ export class Parser {
         }
         return assignments;
     }
-
     private handleFunctionCall(id: string) {
         return this.parsePostfixExpression(this.parseFunctionCall({ kind: "Identifier", name: id } as Identifier));
     }
@@ -619,9 +660,8 @@ export class Parser {
         });
         return this.parseVariableDeclaration(operations);
     }
-
     private handleMemberFunctionOrVariableAssignment(token: Token, elements: String[]) {
-        if (token.tag !== Tag.ID) this.error("Invalid name");
+        if (!(token.tag === Tag.ID || Tag.THIS)) this.error("Invalid name");
         const m = this.parsePostfixExpression({ kind: "Identifier", name: token.value } as Identifier);
         if (m.kind === "MemberFunctionCall") {
             if (elements.length > 0) this.error("unexpected token");
@@ -634,13 +674,11 @@ export class Parser {
         });
         return this.parseVariableDeclaration(operations);
     }
-
     private handleComma(id: string, elements: String[]) {
         this.advance();
         elements.push(id);
         return this.parseDeclaration(elements);
     }
-
     private handleSelfAssignment(token: Token, elements: String[]) {
         if (token.tag !== Tag.ID) this.error("Invalid name");
         const operations = this.createVariableAssignments(elements);
@@ -650,19 +688,11 @@ export class Parser {
         });
         return this.parseVariableDeclaration(operations);
     }
+    private handleAssignment(elements: String[]) {
+        if (!(this.peek(1).tag === Tag.ID || Tag.UNDERSCORE)) return this.parseVariableDeclaration(this.createVariableAssignments(elements))
 
-    private handleAssignment(token: Token, elements: String[]) {
-        elements.push(token.value);
-        this.advance(); // Skip ASSIGN
-        const identifier: Identifier = { kind: "Identifier", name: this.advance().value };
-
-        if (!this.match(Tag.LRP)) {
-            return this.parseVariableOperations(identifier, elements);
-        }
-
-        return this.parseFunction(identifier, elements);
+        return this.parseFunction(elements);
     }
-
     private parseVariableOperations(identifier: Identifier, elements: String[]) {
         const declarations: VariableOperations = {
             kind: "VariableOperations",
@@ -675,15 +705,17 @@ export class Parser {
         }
         return declarations;
     }
+    private parseFunction(elements: String[]) {
+        this.advance(); // Skip ASSIGN
 
-    private parseFunction(identifier: Identifier, elements: String[]) {
-        if (this.match(Tag.RRP)) {
-            return this.handleEmptyFunctionSignature(elements, identifier);
+        const identifier: Identifier = { kind: "Identifier", name: this.advance().value };
+
+        if (!this.match(Tag.LRP)) {
+            return this.parseVariableOperations(identifier, elements);
         }
 
-        return this.handleNonEmptyFunctionSignature(elements, identifier);
+        return this.parseFuncDec(identifier, elements);
     }
-
     private handleEmptyFunctionSignature(elements: String[], identifier: Identifier) {
         if (this.match(Tag.LCP)) {
             const body: Statement[] = [];
@@ -702,7 +734,6 @@ export class Parser {
         const call: FunctionCall = { kind: "FunctionCall", identifier, arguments: [] };
         return this.createVariableOperations(elements, call);
     }
-
     private createVariableOperations(elements: String[], expr: Expression) {
         const declarations: VariableOperations = {
             kind: "VariableOperations",
@@ -715,7 +746,6 @@ export class Parser {
         }
         return declarations;
     }
-
     private handleNonEmptyFunctionSignature(elements: String[], identifier: Identifier) {
         if (!this.check(Tag.STR, Tag.NUM, Tag.BOOL, Tag.ID)) this.error("Expected type");
         let i = 1;
@@ -731,7 +761,6 @@ export class Parser {
         }
         return this.createVariableOperations(elements, call);
     }
-
     private parseFunctionDeclarationBody(elements: String[], identifier: Identifier) {
         const parameters: VariableDeclaration[] = [];
         do {
@@ -743,18 +772,92 @@ export class Parser {
             });
         } while (this.match(Tag.COMMA));
         if (!this.match(Tag.RRP)) this.error("Expected )");
-        if (!this.match(Tag.LCP)) this.error("Expected {");
-        const body: Statement[] = [];
-        while (!this.check(Tag.RCP)) {
-            body.push(this.parseStatement());
-        }
-        if (!this.match(Tag.RCP)) this.error("Expected }");
         return {
             kind: "FunctionDeclaration",
             returnTypes: elements,
             identifier,
             parameters,
-            body,
+            body: this.parseBlock(),
         } as FunctionDeclaration;
+    }
+    private parseBuiltInFunctionCall(): FunctionCall {
+        const func: Identifier = { kind: "Identifier", name: this.advance().value };
+        return this.parseFunctionCall(func);
+    }
+    private parseIfStatement(): IfStatement {
+        this.advance(); // Skip IF
+        const condition = this.parseCondition();
+        const body = this.parseBlock();
+
+        let elseBody: Statement[] | null = null;
+        if (this.match(Tag.ELSE)) {
+            elseBody = this.parseBlock();
+        }
+
+        return { kind: "IfStatement", condition, body, elseBody };
+    }
+    private parseWhileStatement(): WhileStatement {
+        this.advance(); // Skip WHILE
+        const condition = this.parseCondition();
+        const body = this.parseBlock();
+
+        return { kind: "WhileStatement", condition, body };
+    }
+    private parseForStatement(): ForStatement {
+        this.advance(); // Skip FOR
+        if (!this.match(Tag.LRP)) this.error("Expected opening parenthesis");
+
+        const iterator = this.parseArrayOrIdentifier() as Identifier;
+        if (!this.match(Tag.COMMA)) this.error("Expected comma");
+
+        const limit = this.parseExpression();
+        if (!this.match(Tag.RRP)) this.error("Expected closing parenthesis");
+
+        const body = this.parseBlock();
+
+        return { kind: "ForStatement", iterator, limit, body };
+    }
+    private parseCondition(): Expression {
+        if (!this.match(Tag.LRP)) this.error("Expected opening parenthesis");
+        const condition = this.parseExpression();
+        if (!this.match(Tag.RRP)) this.error("Expected closing parenthesis");
+        return condition;
+    }
+    private parseBlock(): Statement[] {
+        if (!this.match(Tag.LCP)) this.error("Expected opening curly brace");
+
+        const body: Statement[] = [];
+        while (!this.check(Tag.RCP)) {
+            body.push(this.parseStatement());
+        }
+
+        if (!this.match(Tag.RCP)) this.error("Expected closing curly brace");
+
+        return body;
+    }
+    private parseFuncDec(identifier: Identifier, elements: String[]) {
+        if (this.match(Tag.RRP)) {
+            return this.handleEmptyFunctionSignature(elements, identifier);
+        }
+
+        return this.handleNonEmptyFunctionSignature(elements, identifier);
+    }
+    private parseClassDeclaration(): ClassDeclaration {
+        this.advance(); // Skip CLASS
+        if (!this.check(Tag.ID)) this.error("Expected class name");
+        const identifier: Identifier = {
+            kind: "Identifier",
+            name: this.advance().value,
+        };
+        const declaration: ClassDeclaration = {
+            kind: "ClassDeclaration",
+            identifier,
+            body: [],
+        };
+
+        if (!this.match(Tag.ASSIGN)) this.error("Expected equal sign");
+        declaration.body = this.parseBlock();
+
+        return declaration;
     }
 }
