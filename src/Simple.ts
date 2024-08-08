@@ -167,10 +167,8 @@ export class Parser {
         if (this.check(Tag.CLASS)) {
             return this.parseClassDeclaration();
         }
-        if (this.check(Tag.THIS)) {
-            throw new Error("Not implemented");
-        }
         if (this.check(Tag.SWITCH)) {
+            // TODO
             throw new Error("Not implemented");
         }
         if (this.check(Tag.IF)) {
@@ -185,79 +183,116 @@ export class Parser {
 
         this.error("Unexpected token");
     }
-    private parseDeclaration(elements: String[]): Statement {
-        const token: Token = this.advance();
-        const tag: Tag = token.tag;
-        const id: string = token.value;
-
-        if (tag === Tag.UNDERSCORE) {
-            elements.push(id);
-            if (this.check(Tag.COMMA)) {
-                return this.parseVariableDeclaration(this.createVariableAssignments(elements));
-            }
-
-            if (this.check(Tag.ASSIGN)) {
-                this.advance(); // Skip ASSIGN
-                const identifier: Identifier = { kind: "Identifier", name: this.advance().value };
-                this.advance(); // Skip LRP
-                return this.parseFuncDec(identifier, elements);
-            }
-
-            return this.error("Unexpected token");
+    private parseDeclaration(elements: Identifier[]): Statement {
+        if (this.check(Tag.STR, Tag.NUM, Tag.BOOL) || (this.check(Tag.ID) && this.peek(1).tag === Tag.LSP && this.peek(1).tag === Tag.RSP)) {
+            return this.parseTypedDeclaration(elements);
         }
 
-        if (tag === Tag.ID && this.check(Tag.LRP)) {
-            return this.handleFunctionCall(id);
+        if (this.check(Tag.UNDERSCORE)) {
+            return this.parseUnderscoreDeclaration(elements);
         }
 
-        if (this.check(Tag.ID)) {
-            return this.handleVariableDeclaration(id, elements);
-        }
-
-        if (this.check(Tag.LSP)) {
-            return this.handleArrayOrFunctionDeclaration(token, elements);
-        }
-
-        if (this.check(Tag.DOT)) {
-            return this.handleMemberFunctionOrVariableAssignment(token, elements);
-        }
-
-        if (this.check(Tag.COMMA)) {
-            return this.handleComma(id, elements);
+        if (this.check(Tag.ID, Tag.THIS)) {
+            return this.parseIdentifierDeclaration(elements);
         }
 
         if (this.check(Tag.SELF_INC, Tag.SELF_DEC)) {
-            return this.handleSelfAssignment(token, elements);
+            return this.parseVariableDeclaration(this.createVariableAssignments(elements));
         }
 
         if (this.check(Tag.ASSIGN)) {
-            elements.push(id);
-            return this.handleAssignment(elements);
+            return this.parseAssignOperator(elements);
+        }
+
+        return this.error("Unexpected token");
+    }
+    private parseTypedDeclaration(elements: Identifier[]): Statement {
+        const type = this.parseType();
+
+        if (this.check(Tag.ID)) {
+            const assignments: (VariableAssignment | VariableDeclaration)[] = this.createVariableAssignments(elements);
+            assignments.push({
+                kind: "VariableDeclaration",
+                type,
+                identifier: { kind: "Identifier", name: this.advance().value },
+            } as VariableDeclaration);
+            return this.parseVariableDeclaration(assignments);
+        }
+
+        if (this.check(Tag.COMMA, Tag.ASSIGN)) {
+            const returnTypes: string[] = [];
+            for (const el: Identifier of elements) {
+                returnTypes.push(el.name);
+            }
+            returnTypes.push(type);
+            return this.parseFunctionDeclaration(returnTypes);
         }
 
         this.error("Unexpected token");
     }
+    private parseType(): string {
+        let type = this.advance().value;
+        while (this.match(Tag.LSP)) {
+            type += "[]";
+            if (!this.match(Tag.RSP)) {
+                throw new Error("Expected ]");
+            }
+        }
+        return type;
+    }
+    private parseIdentifierDeclaration(elements: Identifier[]): Statement {
+        const op: Expression = this.parsePostfixExpression({ kind: "Identifier", name: this.advance().value } as Identifier);
+        if (op.kind === "MemberFunctionCall" || op.kind === "UnaryExpression") {
+            if (elements.length !== 0) this.error("Cannot call a function inside a declaration");
+            return op;
+        }
+
+        if (op.kind === "MemberAttribute" || op.kind === "ArrayElement") {
+            const assignments: (VariableAssignment | VariableDeclaration)[] = this.createVariableAssignments(elements);
+            assignments.push({ kind: "VariableAssignment", element: op } as VariableAssignment);
+            return this.parseVariableDeclaration(assignments);
+        }
+
+        if (op.kind === "Identifier") {
+            if (this.check(Tag.ID)) {
+                const type = (op as Identifier).name;
+                const assignments: (VariableAssignment | VariableDeclaration)[] = this.createVariableAssignments(elements);
+                assignments.push({
+                    kind: "VariableDeclaration",
+                    type,
+                    identifier: { kind: "Identifier", name: this.advance().value },
+                } as VariableDeclaration);
+                return this.parseVariableDeclaration(assignments);
+            }
+
+            if (this.check(Tag.COMMA, Tag.ASSIGN)) {
+                if (this.check(Tag.COMMA)) this.advance();
+                elements.push(op as Identifier);
+                return this.parseDeclaration(elements);
+            }
+
+            this.error("Unexpected token");
+        }
+    }
+    private createVariableAssignments(identifiers: Identifier[]): VariableAssignment[] {
+        const assignments: VariableAssignment[] = [];
+        for (const id of identifiers) {
+            const assignment: VariableAssignment = {
+                kind: "VariableAssignment",
+                element: id
+            };
+            assignments.push(assignment);
+        }
+        return assignments;
+    }
     private parseVariableDeclaration(operations: (VariableDeclaration | VariableAssignment)[]): VariableOperations {
         const declarations: VariableOperations = {
             kind: "VariableOperations",
-            operations,
+            operations: null,
             operator: null,
             values: [],
         };
-        while (this.match(Tag.COMMA)) {
-            let declaration: VariableDeclaration | VariableAssignment;
-            if (this.check(Tag.STR, Tag.NUM, Tag.BOOL))
-                declaration = this.parseTypedVariableDeclaration();
-            else if (this.check(Tag.ID)) {
-                let i = 1;
-                while (this.peek(i).tag === Tag.LSP || this.peek(i).tag === Tag.RSP)
-                    i++;
-                if (this.peek(i).tag === Tag.ID)
-                    declaration = this.parseTypedVariableDeclaration();
-                else declaration = this.parseVariableAssignment();
-            } else declaration = this.parseVariableAssignment();
-            declarations.operations.push(declaration);
-        }
+        declarations.operations = operations.concat(this.parseVariableOperations())
 
         // check if it is a declaration or an assignment
         if (this.check(Tag.ASSIGN, Tag.SELF_INC, Tag.SELF_DEC)) {
@@ -268,100 +303,115 @@ export class Parser {
         } else {
             // if it is a declaration it can't have any assignment inside
             if (declarations.operations.some(op => op.kind === "VariableAssignment")) {
-                throw new Error("Variable declaration cannot have assignments");
+                this.error("Variable declaration cannot have assignments");
             }
         }
 
         return declarations;
     }
-    private parseArrayType(identifier: string): string {
-        while (this.peek().tag === Tag.LSP) {
-            this.advance();
-            if (!this.match(Tag.RSP)) {
-                throw new Error("Expected ]");
-            }
-            identifier += "[]";
+    private parseVariableOperations(): (VariableDeclaration | VariableAssignment)[] {
+        let operations: (VariableDeclaration | VariableAssignment)[]= [];
+        while (this.match(Tag.COMMA)) {
+            let declaration: VariableDeclaration | VariableAssignment;
+            if (this.check(Tag.STR, Tag.NUM, Tag.BOOL))
+                declaration = this.parseTypedVariableDeclaration();
+            else if (this.check(Tag.ID)) {
+                if (this.peek(1).tag === Tag.LSP && this.peek(2).tag === Tag.RSP) declaration = this.parseTypedVariableDeclaration();
+                else {
+                    const op = this.parsePostfixExpression({ kind: "Identifier", name: this.advance().value } as Identifier);
+                    if (op.kind === "Identifier") {
+                        if (this.check(Tag.ID)) {
+                            const type = (op as Identifier).name;
+                            const identifier: Identifier = { kind: "Identifier", name: this.advance().value };
+                            declaration = {kind: "VariableDeclaration", type, identifier} as VariableDeclaration;
+                        }
+                        else declaration = {kind: "VariableAssignment", element: op} as VariableAssignment;
+                    }
+                    else if (op.kind === "MemberAttribute" || op.kind === "ArrayElement") {
+                        declaration = { kind: "VariableAssignment", element: op } as VariableAssignment;
+                    }
+                    else this.error("Unexpected token");
+                }
+                operations.push(declaration);
+            } else this.error("Unexpected token");
         }
-        return identifier;
+        return operations
     }
-    private parseFunctionDeclaration(elements: String[]): FunctionDeclaration {
+    private parseTypedVariableDeclaration(): VariableDeclaration {
+        const type = this.parseType();
+        const identifier: Identifier = {
+            kind: "Identifier",
+            name: this.advance().value,
+        };
+        return { kind: "VariableDeclaration", type, identifier };
+    }
+    private parseFunctionDeclaration(returnTypes: String[]): FunctionDeclaration {
         const declaration: FunctionDeclaration = {
             kind: "FunctionDeclaration",
-            returnTypes: elements,
+            returnTypes: returnTypes.concat(this.parseReturnTypes()),
             identifier: null,
             parameters: [],
             body: [],
         };
 
-        while (!this.check(Tag.ASSIGN)) {
-            if (this.check(Tag.COMMA)) {
-                this.advance();
-            }
-            if (this.check(Tag.ID)) {
-                declaration.returnTypes.push(this.advance().value);
-                while (this.match(Tag.LSP)) {
-                    if (!this.match(Tag.RSP)) {
-                        throw new Error("Expected ]");
-                    }
-                    declaration.returnTypes[declaration.returnTypes.length - 1] += "[]";
-                }
-            }
-        }
-
         if (!this.match(Tag.ASSIGN)) {
-            throw new Error("Expected assignment");
+            this.error("Expected assignment");
         }
 
         if (!this.check(Tag.ID)) {
-            throw new Error("Expected identifier");
+            this.error("Expected identifier");
         }
         declaration.identifier = {
             kind: "Identifier",
             name: this.advance().value,
         };
-        if (!this.match(Tag.LRP)) {
-            throw new Error("Expected (");
-        }
-        if (!this.check(Tag.RRP)) {
+        if (!this.match(Tag.RRP)) {
             declaration.parameters = this.parseParameters();
         }
-        if (!this.match(Tag.RRP)) {
-            throw new Error("Expected )");
-        }
-        if (!this.match(Tag.LCP)) {
-            throw new Error("Expected {");
-        }
-        while (!this.check(Tag.RCP)) {
-            declaration.body.push(this.parseStatement());
-        }
-        if (!this.match(Tag.RCP)) {
-            throw new Error("Expected }");
-        }
+        declaration.body = this.parseBlock();
 
         return declaration;
     }
-    private parseParameters(): VariableDeclaration[] {
-        const parameters: VariableDeclaration[] = [];
-        do {
-            if (!this.check(Tag.NUM, Tag.STR, Tag.BOOL))
-                throw new Error("Expected type");
-            let type = this.advance().value;
-            while (this.match(Tag.LSP)) {
-                type += "[]";
-                if (!this.match(Tag.RSP)) {
-                    throw new Error("Expected ]");
-                }
-            }
-            if (!this.check(Tag.ID)) {
-                throw new Error("Expected identifier");
-            }
-            parameters.push({
-                kind: "VariableDeclaration",
-                type,
-                identifier: { kind: "Identifier", name: this.advance().value },
-            });
-        } while (this.match(Tag.COMMA));
-        return parameters;
+    private parseReturnTypes(): string[] {
+        const returnTypes: string[] = [];
+        while (this.match(Tag.COMMA)) {
+            returnTypes.push(this.parseType())
+        }
+        return returnTypes;
+    }
+    private parseUnderscoreDeclaration(elements: Identifier[]) {
+        elements.push({ kind: "Identifier", name: this.advance().value });
+        if (this.check(Tag.COMMA)) {
+            return this.parseVariableDeclaration(this.createVariableAssignments(elements));
+        }
+
+        if (this.check(Tag.ASSIGN)) {
+            if (elements.length !== 1) this.error("Void function cannot have multiple return types");
+            return this.parseFunctionDeclaration(["_"]);
+        }
+
+        return this.error("Unexpected token");
+    }
+    private parseAssignOperator(elements: Identifier[]) {
+        if (!(this.peek(1).tag === Tag.ID || this.peek(1).tag === Tag.UNDERSCORE)) return this.parseVariableDeclaration(this.createVariableAssignments(elements))
+
+        this.advance() // Skip ASSIGN
+
+        if (this.isFunctionDeclaration()) return {kind: "FunctionDeclaration", returnTypes: elements.map(el => el.name), identifier: { kind: "Identifier", name: this.advance().value }, parameters: this.parseParameters(), body: this.parseBlock() } as FunctionDeclaration;
+
+        const declarations: VariableOperations = {
+            kind: "VariableOperations",
+            operations: this.createVariableAssignments(elements),
+            operator: "=",
+            values: [this.parseExpression()],
+        };
+        while (this.match(Tag.COMMA)) {
+            declarations.values.push(this.parseExpression());
+        }
+        return declarations;
+    }
+    private isFunctionDeclaration(): boolean {
+        return (this.peek(1).tag === Tag.LRP && ((this.peek(2).tag === Tag.RRP && this.peek(3).tag === Tag.LCP) || ([Tag.STR, Tag.NUM, Tag.BOOL] as Tag[]).includes(this.peek(2).tag) || (this.peek(2).tag === Tag.ID && (this.peek(3).tag === Tag.ID || (this.peek(3).tag === Tag.LSP && this.peek(4).tag === Tag.RSP)))))
     }
     private parsePostfixExpression(base: Expression): Expression {
         while (true) {
@@ -399,6 +449,42 @@ export class Parser {
         }
         return base;
     }
+    private parseFunctionCall(identifier: Identifier): FunctionCall {
+        const call: FunctionCall = {
+            kind: "FunctionCall",
+            identifier,
+            arguments: [],
+        };
+        this.advance(); // Skip LRP
+        if (!this.match(Tag.RRP)) {
+            do {
+                call.arguments.push(this.parseExpression());
+            } while (this.match(Tag.COMMA));
+            if (!this.match(Tag.RRP)) this.error("Expected )");
+        }
+        return call;
+    }
+    private parseParameters(): VariableDeclaration[] {
+        if (!this.match(Tag.LRP)) {
+            this.error("Expected (");
+        }
+        const parameters: VariableDeclaration[] = [];
+        if (!this.match(Tag.RRP)) {
+            do {
+                const type = this.parseType();
+                if (!this.check(Tag.ID)) {
+                    this.error("Expected identifier");
+                }
+                parameters.push({
+                    kind: "VariableDeclaration",
+                    type,
+                    identifier: { kind: "Identifier", name: this.advance().value },
+                });
+            } while (this.match(Tag.COMMA));
+            if (!this.match(Tag.RRP)) this.error("Expected )");
+        }
+        return parameters;
+    }
     private parseArrayElement(identifier: Identifier): ArrayElement {
         const element: ArrayElement = {
             kind: "ArrayElement",
@@ -411,22 +497,8 @@ export class Parser {
         }
         return element;
     }
-    private parseFunctionCall(identifier: Identifier): FunctionCall {
-        const call: FunctionCall = {
-            kind: "FunctionCall",
-            identifier,
-            arguments: [],
-        };
-        this.advance(); // Skip LRP
-        if (!this.check(Tag.RRP)) {
-            do {
-                call.arguments.push(this.parseExpression());
-            } while (this.match(Tag.COMMA));
-        }
-        if (!this.match(Tag.RRP)) this.error("Expected )");
-        return call;
-    }
     private parseExpression(): Expression {
+        // TODO decide how operator are handled
         return this.parseBinaryExpression(0);
     }
     private parseBinaryExpression(precedence: number): Expression {
@@ -583,203 +655,6 @@ export class Parser {
         if (!this.match(Tag.RSP)) this.error("Expected closing bracket");
         return { kind: "Array", elements };
     }
-    private parseVariableAssignment(): VariableAssignment {
-        const element = this.check(Tag.UNDERSCORE)
-            ? { kind: "Identifier", name: this.advance().value }
-            : this.parseArrayOrIdentifier();
-
-        return { kind: "VariableAssignment", element } as VariableAssignment;
-    }
-    private parseTypedVariableDeclaration(): VariableDeclaration {
-        let type = this.advance().value;
-        while (this.match(Tag.LSP)) {
-            type += "[]";
-            if (!this.match(Tag.RSP)) throw new Error("Expected ]");
-        }
-        const identifier: Identifier = {
-            kind: "Identifier",
-            name: this.advance().value,
-        };
-        return { kind: "VariableDeclaration", type, identifier };
-    }
-    private parseArrayOrIdentifier(): Expression {
-        const identifier: Identifier = {
-            kind: "Identifier",
-            name: this.advance().value,
-        };
-        if (this.check(Tag.LSP)) {
-            return this.parseArrayElement(identifier);
-        }
-        return identifier;
-    }
-    private createVariableAssignments(element: string[]): VariableAssignment[] {
-        const assignments: VariableAssignment[] = [];
-        for (const id of element) {
-            const assignment: VariableAssignment = {
-                kind: "VariableAssignment",
-                element: {
-                    kind: "Identifier",
-                    name: id,
-                } as Expression,
-            };
-            assignments.push(assignment);
-        }
-        return assignments;
-    }
-    private handleFunctionCall(id: string) {
-        return this.parsePostfixExpression(this.parseFunctionCall({ kind: "Identifier", name: id } as Identifier));
-    }
-    private handleVariableDeclaration(id: string, elements: String[]): Statement {
-        const operations: (VariableDeclaration | VariableAssignment)[] = this.createVariableAssignments(elements);
-        operations.push({
-            kind: "VariableDeclaration",
-            type: id,
-            identifier: { kind: "Identifier", name: this.advance().value },
-        });
-        return this.parseVariableDeclaration(operations);
-    }
-    private handleArrayOrFunctionDeclaration(token: Token, elements: String[]): Statement {
-        if (this.peek(1).tag === Tag.RSP) {
-            const type = this.parseArrayType(token.value);
-            if (this.peek().tag === Tag.ID) {
-                const operations:(VariableDeclaration | VariableAssignment)[] = this.createVariableAssignments(elements);
-                operations.push({
-                    kind: "VariableDeclaration",
-                    type: type,
-                    identifier: { kind: "Identifier", name: this.advance().value },
-                });
-                return this.parseVariableDeclaration(operations);
-            }
-            return this.parseFunctionDeclaration(elements);
-        }
-        if (token.tag !== Tag.ID) this.error("Invalid name");
-        const operations = this.createVariableAssignments(elements);
-        operations.push({
-            kind: "VariableAssignment",
-            element: this.parsePostfixExpression({ kind: "Identifier", name: token.value } as Identifier),
-        });
-        return this.parseVariableDeclaration(operations);
-    }
-    private handleMemberFunctionOrVariableAssignment(token: Token, elements: String[]) {
-        if (!(token.tag === Tag.ID || Tag.THIS)) this.error("Invalid name");
-        const m = this.parsePostfixExpression({ kind: "Identifier", name: token.value } as Identifier);
-        if (m.kind === "MemberFunctionCall") {
-            if (elements.length > 0) this.error("unexpected token");
-            return m;
-        }
-        const operations = this.createVariableAssignments(elements);
-        operations.push({
-            kind: "VariableAssignment",
-            element: m,
-        });
-        return this.parseVariableDeclaration(operations);
-    }
-    private handleComma(id: string, elements: String[]) {
-        this.advance();
-        elements.push(id);
-        return this.parseDeclaration(elements);
-    }
-    private handleSelfAssignment(token: Token, elements: String[]) {
-        if (token.tag !== Tag.ID) this.error("Invalid name");
-        const operations = this.createVariableAssignments(elements);
-        operations.push({
-            kind: "VariableAssignment",
-            element: this.parsePostfixExpression({ kind: "Identifier", name: token.value } as Identifier),
-        });
-        return this.parseVariableDeclaration(operations);
-    }
-    private handleAssignment(elements: String[]) {
-        if (!(this.peek(1).tag === Tag.ID || Tag.UNDERSCORE)) return this.parseVariableDeclaration(this.createVariableAssignments(elements))
-
-        return this.parseFunction(elements);
-    }
-    private parseVariableOperations(identifier: Identifier, elements: String[]) {
-        const declarations: VariableOperations = {
-            kind: "VariableOperations",
-            operations: this.createVariableAssignments(elements),
-            operator: "=",
-            values: [this.parsePostfixExpression(identifier)],
-        };
-        while (this.match(Tag.COMMA)) {
-            declarations.values.push(this.parseExpression());
-        }
-        return declarations;
-    }
-    private parseFunction(elements: String[]) {
-        this.advance(); // Skip ASSIGN
-
-        const identifier: Identifier = { kind: "Identifier", name: this.advance().value };
-
-        if (!this.match(Tag.LRP)) {
-            return this.parseVariableOperations(identifier, elements);
-        }
-
-        return this.parseFuncDec(identifier, elements);
-    }
-    private handleEmptyFunctionSignature(elements: String[], identifier: Identifier) {
-        if (this.match(Tag.LCP)) {
-            const body: Statement[] = [];
-            while (!this.check(Tag.RCP)) {
-                body.push(this.parseStatement());
-            }
-            if (!this.match(Tag.RCP)) throw new Error("Expected }");
-            return {
-                kind: "FunctionDeclaration",
-                returnTypes: elements,
-                identifier,
-                parameters: [],
-                body,
-            } as FunctionDeclaration;
-        }
-        const call: FunctionCall = { kind: "FunctionCall", identifier, arguments: [] };
-        return this.createVariableOperations(elements, call);
-    }
-    private createVariableOperations(elements: String[], expr: Expression) {
-        const declarations: VariableOperations = {
-            kind: "VariableOperations",
-            operations: this.createVariableAssignments(elements),
-            operator: "=",
-            values: [this.parsePostfixExpression(expr)],
-        };
-        while (this.match(Tag.COMMA)) {
-            declarations.values.push(this.parseExpression());
-        }
-        return declarations;
-    }
-    private handleNonEmptyFunctionSignature(elements: String[], identifier: Identifier) {
-        if (!this.check(Tag.STR, Tag.NUM, Tag.BOOL, Tag.ID)) this.error("Expected type");
-        let i = 1;
-        while (this.peek(i).tag === Tag.LSP && this.peek(i + 1).tag === Tag.RSP) i += 2;
-        if (this.peek(i).tag === Tag.ID) {
-            return this.parseFunctionDeclarationBody(elements, identifier);
-        }
-        const call: FunctionCall = { kind: "FunctionCall", identifier, arguments: [] };
-        if (!this.check(Tag.RRP)) {
-            do {
-                call.arguments.push(this.parseExpression());
-            } while (this.match(Tag.COMMA));
-        }
-        return this.createVariableOperations(elements, call);
-    }
-    private parseFunctionDeclarationBody(elements: String[], identifier: Identifier) {
-        const parameters: VariableDeclaration[] = [];
-        do {
-            let type = this.parseArrayType(this.advance().value);
-            parameters.push({
-                kind: "VariableDeclaration",
-                type,
-                identifier: { kind: "Identifier", name: this.advance().value },
-            });
-        } while (this.match(Tag.COMMA));
-        if (!this.match(Tag.RRP)) this.error("Expected )");
-        return {
-            kind: "FunctionDeclaration",
-            returnTypes: elements,
-            identifier,
-            parameters,
-            body: this.parseBlock(),
-        } as FunctionDeclaration;
-    }
     private parseBuiltInFunctionCall(): FunctionCall {
         const func: Identifier = { kind: "Identifier", name: this.advance().value };
         return this.parseFunctionCall(func);
@@ -807,7 +682,7 @@ export class Parser {
         this.advance(); // Skip FOR
         if (!this.match(Tag.LRP)) this.error("Expected opening parenthesis");
 
-        const iterator = this.parseArrayOrIdentifier() as Identifier;
+        const iterator : Identifier = { kind: "Identifier", name: this.advance().value };
         if (!this.match(Tag.COMMA)) this.error("Expected comma");
 
         const limit = this.parseExpression();
@@ -824,23 +699,16 @@ export class Parser {
         return condition;
     }
     private parseBlock(): Statement[] {
-        if (!this.match(Tag.LCP)) this.error("Expected opening curly brace");
+        if (!this.match(Tag.LCP)) this.error("Expected {");
 
         const body: Statement[] = [];
         while (!this.check(Tag.RCP)) {
             body.push(this.parseStatement());
         }
 
-        if (!this.match(Tag.RCP)) this.error("Expected closing curly brace");
+        if (!this.match(Tag.RCP)) this.error("Expected }");
 
         return body;
-    }
-    private parseFuncDec(identifier: Identifier, elements: String[]) {
-        if (this.match(Tag.RRP)) {
-            return this.handleEmptyFunctionSignature(elements, identifier);
-        }
-
-        return this.handleNonEmptyFunctionSignature(elements, identifier);
     }
     private parseClassDeclaration(): ClassDeclaration {
         this.advance(); // Skip CLASS

@@ -33,7 +33,6 @@ export enum Tag {
     NUM,        // num
     STR,        // str
     BOOL,       // bool
-    ARR,        // arr TODO: Remove
     ID,
     NUMBER,
     TEXT,

@@ -8,7 +8,8 @@
     "start": "tsx src/Day.ts",
     "lex": "tsx src/Day.ts -L",
     "parse": "tsx src/Day.ts -P",
-    "ast": "tsx src/Day.ts -A"
+    "ast": "tsx src/Day.ts -A",
+    "test": "jest"
   },
   "keywords": [],
   "author": "",

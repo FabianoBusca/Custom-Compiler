@@ -1,11 +1,20 @@
-class Dog = {
-    str name
-    num age
-    Dog = _(str name, num age) {
-        this.name = name
-        this.age = age
-    }
-    _ = bark() {
-        print('Woof')
-    }
-}
+a = 5
+a = foo()
+a = foo() {}
+a = foo(num a) {}
+a = foo(b[] c) {}
+a = foo(b.j().l[0])[0]
+a, b, str d = foo().k(7 ** 2) + 1
+
+a = _()
+a = _() {}
+a = _(num a) {}
+a = _(b[] c) {}
+a = _(b.j().l[0])[0]
+a = _() + 1
+
+_, a = foo()
+a, _, b = foo()
+_ = foo() {}
+_ = foo(b a) {}
+_ = foo(b[] c) {}
