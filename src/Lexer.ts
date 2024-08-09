@@ -24,7 +24,7 @@ export class Lexer {
         ['class', Tag.CLASS], ['this', Tag.THIS], ['true', Tag.TRUE],
         ['false', Tag.FALSE], ['print', Tag.PRINT], ['read', Tag.READ],
         ['null', Tag.NULL], ['num', Tag.NUM], ['str', Tag.STR],
-        ['bool', Tag.BOOL], ['arr', Tag.ARR], ['_', Tag.UNDERSCORE]
+        ['bool', Tag.BOOL], ['_', Tag.UNDERSCORE]
     ]);
 
     constructor(source: string) {
@@ -228,7 +228,7 @@ export class Lexer {
         if (this.match('=')) {
             this.addToken(Tag.NE, '!=');
         }
-        else this.addToken(Tag.NOT, this.advance());
+        else this.addToken(Tag.NOT, '!');
     }
 
     private lexString(): void {

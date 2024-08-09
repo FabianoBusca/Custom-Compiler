@@ -127,6 +127,7 @@ class ParserError extends Error {
     }
 }
 export class Parser {
+    // TODO: null
     private index: number = 0;
     constructor(private readonly tokens: Token[], private readonly source: string[]) {}
     parse(): Program {
@@ -241,8 +242,8 @@ export class Parser {
         return type;
     }
     private parseIdentifierDeclaration(elements: Identifier[]): Statement {
-        const op: Expression = this.parsePostfixExpression({ kind: "Identifier", name: this.advance().value } as Identifier);
-        if (op.kind === "MemberFunctionCall" || op.kind === "UnaryExpression") {
+        const op: Expression = this.parseExpression()//this.parsePostfixExpression({ kind: "Identifier", name: this.advance().value } as Identifier);
+        if (op.kind === "MemberFunctionCall" || op.kind === "UnaryExpression" || op.kind === "FunctionCall") {
             if (elements.length !== 0) this.error("Cannot call a function inside a declaration");
             return op;
         }
@@ -273,6 +274,8 @@ export class Parser {
 
             this.error("Unexpected token");
         }
+
+        this.error("Unexpected expression");
     }
     private createVariableAssignments(identifiers: Identifier[]): VariableAssignment[] {
         const assignments: VariableAssignment[] = [];
@@ -315,6 +318,8 @@ export class Parser {
             let declaration: VariableDeclaration | VariableAssignment;
             if (this.check(Tag.STR, Tag.NUM, Tag.BOOL))
                 declaration = this.parseTypedVariableDeclaration();
+            else if (this.check(Tag.UNDERSCORE))
+                declaration = { kind: "VariableAssignment", element: { kind: "Identifier", name: this.advance().value } } as VariableAssignment;
             else if (this.check(Tag.ID)) {
                 if (this.peek(1).tag === Tag.LSP && this.peek(2).tag === Tag.RSP) declaration = this.parseTypedVariableDeclaration();
                 else {
@@ -332,8 +337,8 @@ export class Parser {
                     }
                     else this.error("Unexpected token");
                 }
-                operations.push(declaration);
             } else this.error("Unexpected token");
+            operations.push(declaration);
         }
         return operations
     }
@@ -601,6 +606,8 @@ export class Parser {
             expr = this.parseFString();
         } else if (this.check(Tag.LSP)) {
             expr = this.parseArray();
+        } else if (this.check(Tag.LRP)) {
+            expr = this.parseParenthesizeExpression();
         }
         else {
             this.error("Unexpected token");
@@ -654,6 +661,12 @@ export class Parser {
         }
         if (!this.match(Tag.RSP)) this.error("Expected closing bracket");
         return { kind: "Array", elements };
+    }
+    private parseParenthesizeExpression(): Expression {
+        this.advance(); // Skip opening parenthesis
+        const expr = this.parseExpression();
+        if (!this.match(Tag.RRP)) this.error("Expected )");
+        return expr;
     }
     private parseBuiltInFunctionCall(): FunctionCall {
         const func: Identifier = { kind: "Identifier", name: this.advance().value };

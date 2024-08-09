@@ -10,7 +10,7 @@ a[0] = 4
 print(y)
 num, str = func (num x, str y) {
     print(y)
-    return 0, x
+    return(0, x)
 }
 _ = func() {
     print('Hello')
@@ -19,11 +19,11 @@ _, num res = func(5, 'Hello')
 class Dog = {
     str name
     num age
-    Dog _ = (str name, num age) {
+    Dog = _(str name, num age) {
         this.name = name
         this.age = age
     }
-    bark = () {
+    _ = bark() {
         print('Woof')
     }
 }
