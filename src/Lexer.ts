@@ -1,15 +1,8 @@
 import {Tag, Token} from "./Token";
+import {DayError} from "./Error";
 
 // TODO unclosed comments are weird
-class LexerError extends Error {
-    constructor(message: string, public line_number: number, public column: number, public line: string) {
-        super(`${message} at line ${line_number}, column ${column}:\n${line_number}: ${line}\n` + ' '.repeat(column + String(line_number).length + 2) + '~');
-    }
-}
-
 export class Lexer {
-    // TODO: source as string[]
-    // TODO: extract error class
     private readonly source: string;
     private position: number = 0;
     private isString: boolean = false;
@@ -134,7 +127,7 @@ export class Lexer {
     }
 
     private error(message: string): never {
-        throw new LexerError(message, this.line, this.column - 2, this.source.split('\n')[this.line - 1]);
+        throw new DayError(message, this.line, this.column - 2, this.source.split('\n')[this.line - 1]);
     }
 
     private lexRCP(): void {

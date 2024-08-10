@@ -1,5 +1,5 @@
 import { Lexer } from "../src/Lexer";
-import { Parser } from "../src/Simple";
+import { Parser } from "../src/Parser";
 
 export function parserTest(source: string, expected: string) {
     const lexer = new Lexer(source);

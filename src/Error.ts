@@ -1,14 +1,5 @@
-export enum ErrorType {
-    ERROR_NONE = 0,
-    ERROR_READ = 1
-}
-
-export class Error {
-    type: ErrorType;
-    message: string;
-
-    constructor(type: ErrorType, message: string) {
-        this.type = type;
-        this.message = message;
+export class DayError extends Error {
+    constructor(message: string, public line_number: number, public column: number, public line: string) {
+        super(`${message} at line ${line_number}, column ${column}:\n${line_number}: ${line}\n` + ' '.repeat(column + String(line_number).length + 2) + '~');
     }
 }

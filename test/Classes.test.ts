@@ -93,7 +93,7 @@ describe("Class Declarations", () => {
                                                   "kind": "VariableAssignment",
                                                   "element": {
                                                     "kind": "MemberAttribute",
-                                                    "object": {
+                                                    "member": {
                                                       "kind": "Identifier",
                                                       "name": "this"
                                                     },
@@ -104,7 +104,7 @@ describe("Class Declarations", () => {
                                                   }
                                                 }
                                               ],
-                                              "operator": "=",
+                                              "operator": 21,
                                               "values": [
                                                 {
                                                   "kind": "Identifier",
@@ -119,7 +119,7 @@ describe("Class Declarations", () => {
                                                   "kind": "VariableAssignment",
                                                   "element": {
                                                     "kind": "MemberAttribute",
-                                                    "object": {
+                                                    "member": {
                                                       "kind": "Identifier",
                                                       "name": "this"
                                                     },
@@ -130,7 +130,7 @@ describe("Class Declarations", () => {
                                                   }
                                                 }
                                               ],
-                                              "operator": "=",
+                                              "operator": 21,
                                               "values": [
                                                 {
                                                   "kind": "Identifier",

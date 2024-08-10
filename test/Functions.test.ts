@@ -102,7 +102,7 @@ describe("Function calls and declarations", () => {
                                           }
                                         }
                                       ],
-                                      "operator": "=",
+                                      "operator": 21,
                                       "values": [
                                         {
                                           "kind": "FunctionCall",
@@ -135,7 +135,7 @@ describe("Function calls and declarations", () => {
                                           }
                                         }
                                       ],
-                                      "operator": "=",
+                                      "operator": 21,
                                       "values": [
                                         {
                                           "kind": "ArrayElement",
@@ -150,7 +150,7 @@ describe("Function calls and declarations", () => {
                                                 "kind": "ArrayElement",
                                                 "array": {
                                                   "kind": "MemberAttribute",
-                                                  "object": {
+                                                  "member": {
                                                     "kind": "MemberFunctionCall",
                                                     "member": {
                                                       "kind": "Identifier",
@@ -224,7 +224,7 @@ describe("Function calls and declarations", () => {
                                           }
                                         }
                                       ],
-                                      "operator": "=",
+                                      "operator": 21,
                                       "values": [
                                         {
                                           "kind": "BinaryExpression",
@@ -389,7 +389,7 @@ describe("Underscore functions", () => {
                                           }
                                         }
                                       ],
-                                      "operator": "=",
+                                      "operator": 21,
                                       "values": [
                                         {
                                           "kind": "FunctionCall",
@@ -423,7 +423,7 @@ describe("Underscore functions", () => {
                                           }
                                         }
                                       ],
-                                      "operator": "=",
+                                      "operator": 21,
                                       "values": [
                                         {
                                           "kind": "FunctionCall",
@@ -456,11 +456,11 @@ describe("Underscore functions", () => {
                                           }
                                         }
                                       ],
-                                      "operator": "=",
+                                      "operator": 21,
                                       "values": [
                                         {
                                           "kind": "MemberAttribute",
-                                          "object": {
+                                          "member": {
                                             "kind": "ArrayElement",
                                             "array": {
                                               "kind": "FunctionCall",
@@ -473,7 +473,7 @@ describe("Underscore functions", () => {
                                                   "kind": "ArrayElement",
                                                   "array": {
                                                     "kind": "MemberAttribute",
-                                                    "object": {
+                                                    "member": {
                                                       "kind": "MemberFunctionCall",
                                                       "member": {
                                                         "kind": "Identifier",
@@ -537,7 +537,7 @@ describe("Underscore functions", () => {
                                           }
                                         }
                                       ],
-                                      "operator": "=",
+                                      "operator": 21,
                                       "values": [
                                         {
                                           "kind": "BinaryExpression",
@@ -617,7 +617,7 @@ test("Complex function statement", () => {
                                       }
                                     }
                                   ],
-                                  "operator": "=",
+                                  "operator": 21,
                                   "values": [
                                     {
                                       "kind": "FunctionCall",

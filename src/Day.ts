@@ -1,25 +1,9 @@
 import * as fs from "fs";
 import * as path from "path";
-import { Error, ErrorType } from "./Error";
 import {Lexer} from "./Lexer";
-//import {Parser} from "./Parser";
-import {Parser} from "./Simple";
+import {Parser} from "./Parser";
 
 const scriptsPath = './scripts';
-
-function readFile(filePath: string, content: { src: string }): Promise<Error> {
-    return new Promise((resolve) => {
-        fs.readFile(filePath, 'utf8', (err, data) => {
-            if (err) {
-                resolve(new Error(ErrorType.ERROR_READ, `Unable to read file: ${err}`));
-            } else {
-                content.src = data;
-                resolve(new Error(ErrorType.ERROR_NONE, ''));
-            }
-        });
-    });
-}
-
 function compile(source: string, flag: string) {
     source = source.replace('\n\r', '\n');
     const lexer = new Lexer(source);
@@ -74,4 +58,4 @@ async function main() {
     compile(content, process.argv[2]);
 }
 
-main();
+await main();

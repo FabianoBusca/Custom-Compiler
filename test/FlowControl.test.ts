@@ -102,7 +102,7 @@ describe("Flow control statements", () => {
                                         "operator": 16,
                                         "right": {
                                           "kind": "UnaryExpression",
-                                          "operator": "!",
+                                          "operator": 14,
                                           "base": {
                                             "kind": "ArrayElement",
                                             "array": {
@@ -132,7 +132,7 @@ describe("Flow control statements", () => {
                                       "body": [
                                         {
                                           "kind": "UnaryExpression",
-                                          "operator": "++",
+                                          "operator": 8,
                                           "base": {
                                             "kind": "Identifier",
                                             "name": "a"
@@ -151,11 +151,11 @@ describe("Flow control statements", () => {
                                               }
                                             }
                                           ],
-                                          "operator": "=",
+                                          "operator": 21,
                                           "values": [
                                             {
                                               "kind": "UnaryExpression",
-                                              "operator": "!",
+                                              "operator": 14,
                                               "base": {
                                                 "kind": "Identifier",
                                                 "name": "b"
@@ -185,7 +185,7 @@ describe("Flow control statements", () => {
                                       },
                                       "limit": {
                                         "kind": "MemberAttribute",
-                                        "object": {
+                                        "member": {
                                           "kind": "Identifier",
                                           "name": "x"
                                         },
@@ -288,6 +288,403 @@ describe("Flow control statements", () => {
                                     }
                                   ]
                                 }`;
+        parserTest(source, JSON.parse(expected));
+    });
+
+    test("Switch statement - 1", () => {
+       const source = `switch (foo() + 1) {
+                                    case 1 + 1 {
+                                        print("1")
+                                    }
+                                    case a() {
+                                        print("a")
+                                    }
+                                    case b[0] {
+                                        print("b")
+                                    }
+                                
+                                    num[] x = 4
+                                    print(x)
+                                }`
+
+       const expected = `{
+                                  "kind": "Program",
+                                  "body": [
+                                    {
+                                      "kind": "SwitchStatement",
+                                      "expression": {
+                                        "kind": "BinaryExpression",
+                                        "left": {
+                                          "kind": "FunctionCall",
+                                          "identifier": {
+                                            "kind": "Identifier",
+                                            "name": "foo"
+                                          },
+                                          "arguments": []
+                                        },
+                                        "operator": 1,
+                                        "right": {
+                                          "kind": "Number",
+                                          "value": 1
+                                        }
+                                      },
+                                      "cases": [
+                                        {
+                                          "kind": "CaseStatement",
+                                          "values": [
+                                            {
+                                              "kind": "BinaryExpression",
+                                              "left": {
+                                                "kind": "Number",
+                                                "value": 1
+                                              },
+                                              "operator": 1,
+                                              "right": {
+                                                "kind": "Number",
+                                                "value": 1
+                                              }
+                                            }
+                                          ],
+                                          "body": [
+                                            {
+                                              "kind": "FunctionCall",
+                                              "identifier": {
+                                                "kind": "Identifier",
+                                                "name": "print"
+                                              },
+                                              "arguments": [
+                                                {
+                                                  "kind": "String",
+                                                  "value": "1"
+                                                }
+                                              ]
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "kind": "CaseStatement",
+                                          "values": [
+                                            {
+                                              "kind": "FunctionCall",
+                                              "identifier": {
+                                                "kind": "Identifier",
+                                                "name": "a"
+                                              },
+                                              "arguments": []
+                                            }
+                                          ],
+                                          "body": [
+                                            {
+                                              "kind": "FunctionCall",
+                                              "identifier": {
+                                                "kind": "Identifier",
+                                                "name": "print"
+                                              },
+                                              "arguments": [
+                                                {
+                                                  "kind": "String",
+                                                  "value": "a"
+                                                }
+                                              ]
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "kind": "CaseStatement",
+                                          "values": [
+                                            {
+                                              "kind": "ArrayElement",
+                                              "array": {
+                                                "kind": "Identifier",
+                                                "name": "b"
+                                              },
+                                              "indices": [
+                                                {
+                                                  "kind": "Number",
+                                                  "value": 0
+                                                }
+                                              ]
+                                            }
+                                          ],
+                                          "body": [
+                                            {
+                                              "kind": "FunctionCall",
+                                              "identifier": {
+                                                "kind": "Identifier",
+                                                "name": "print"
+                                              },
+                                              "arguments": [
+                                                {
+                                                  "kind": "String",
+                                                  "value": "b"
+                                                }
+                                              ]
+                                            }
+                                          ]
+                                        }
+                                      ],
+                                      "default": [
+                                        {
+                                          "kind": "VariableOperations",
+                                          "operations": [
+                                            {
+                                              "kind": "VariableDeclaration",
+                                              "type": "num[]",
+                                              "identifier": {
+                                                "kind": "Identifier",
+                                                "name": "x"
+                                              }
+                                            }
+                                          ],
+                                          "operator": 21,
+                                          "values": [
+                                            {
+                                              "kind": "Number",
+                                              "value": 4
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "kind": "FunctionCall",
+                                          "identifier": {
+                                            "kind": "Identifier",
+                                            "name": "print"
+                                          },
+                                          "arguments": [
+                                            {
+                                              "kind": "Identifier",
+                                              "name": "x"
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }`;
+       parserTest(source, JSON.parse(expected));
+    });
+
+    test("Complex flow control statement", () => {
+        const source = `while (-a().b.length() == 1) {
+                                    if (a().b[0] == 1) {
+                                        for (i, 5 + a().b.length()) {
+                                            print(i)
+                                        }
+                                    } else {
+                                        switch (x % 2 == 0) {
+                                            for (i, a().b) {
+                                                print(i)
+                                            }
+                                        }
+                                    }
+                                }`;
+        const expected = `{
+                                  "kind": "Program",
+                                  "body": [
+                                    {
+                                      "kind": "WhileStatement",
+                                      "condition": {
+                                        "kind": "LogicalExpression",
+                                        "left": {
+                                          "kind": "UnaryExpression",
+                                          "operator": 2,
+                                          "base": {
+                                            "kind": "MemberFunctionCall",
+                                            "member": {
+                                              "kind": "MemberAttribute",
+                                              "member": {
+                                                "kind": "FunctionCall",
+                                                "identifier": {
+                                                  "kind": "Identifier",
+                                                  "name": "a"
+                                                },
+                                                "arguments": []
+                                              },
+                                              "attribute": {
+                                                "kind": "Identifier",
+                                                "name": "b"
+                                              }
+                                            },
+                                            "function": {
+                                              "kind": "FunctionCall",
+                                              "identifier": {
+                                                "kind": "Identifier",
+                                                "name": "length"
+                                              },
+                                              "arguments": []
+                                            }
+                                          }
+                                        },
+                                        "operator": 15,
+                                        "right": {
+                                          "kind": "Number",
+                                          "value": 1
+                                        }
+                                      },
+                                      "body": [
+                                        {
+                                          "kind": "IfStatement",
+                                          "condition": {
+                                            "kind": "LogicalExpression",
+                                            "left": {
+                                              "kind": "ArrayElement",
+                                              "array": {
+                                                "kind": "MemberAttribute",
+                                                "member": {
+                                                  "kind": "FunctionCall",
+                                                  "identifier": {
+                                                    "kind": "Identifier",
+                                                    "name": "a"
+                                                  },
+                                                  "arguments": []
+                                                },
+                                                "attribute": {
+                                                  "kind": "Identifier",
+                                                  "name": "b"
+                                                }
+                                              },
+                                              "indices": [
+                                                {
+                                                  "kind": "Number",
+                                                  "value": 0
+                                                }
+                                              ]
+                                            },
+                                            "operator": 15,
+                                            "right": {
+                                              "kind": "Number",
+                                              "value": 1
+                                            }
+                                          },
+                                          "body": [
+                                            {
+                                              "kind": "ForStatement",
+                                              "iterator": {
+                                                "kind": "Identifier",
+                                                "name": "i"
+                                              },
+                                              "limit": {
+                                                "kind": "BinaryExpression",
+                                                "left": {
+                                                  "kind": "Number",
+                                                  "value": 5
+                                                },
+                                                "operator": 1,
+                                                "right": {
+                                                  "kind": "MemberFunctionCall",
+                                                  "member": {
+                                                    "kind": "MemberAttribute",
+                                                    "member": {
+                                                      "kind": "FunctionCall",
+                                                      "identifier": {
+                                                        "kind": "Identifier",
+                                                        "name": "a"
+                                                      },
+                                                      "arguments": []
+                                                    },
+                                                    "attribute": {
+                                                      "kind": "Identifier",
+                                                      "name": "b"
+                                                    }
+                                                  },
+                                                  "function": {
+                                                    "kind": "FunctionCall",
+                                                    "identifier": {
+                                                      "kind": "Identifier",
+                                                      "name": "length"
+                                                    },
+                                                    "arguments": []
+                                                  }
+                                                }
+                                              },
+                                              "body": [
+                                                {
+                                                  "kind": "FunctionCall",
+                                                  "identifier": {
+                                                    "kind": "Identifier",
+                                                    "name": "print"
+                                                  },
+                                                  "arguments": [
+                                                    {
+                                                      "kind": "Identifier",
+                                                      "name": "i"
+                                                    }
+                                                  ]
+                                                }
+                                              ]
+                                            }
+                                          ],
+                                          "elseBody": [
+                                            {
+                                              "kind": "SwitchStatement",
+                                              "expression": {
+                                                "kind": "LogicalExpression",
+                                                "left": {
+                                                  "kind": "BinaryExpression",
+                                                  "left": {
+                                                    "kind": "Identifier",
+                                                    "name": "x"
+                                                  },
+                                                  "operator": 5,
+                                                  "right": {
+                                                    "kind": "Number",
+                                                    "value": 2
+                                                  }
+                                                },
+                                                "operator": 15,
+                                                "right": {
+                                                  "kind": "Number",
+                                                  "value": 0
+                                                }
+                                              },
+                                              "cases": [],
+                                              "default": [
+                                                {
+                                                  "kind": "ForStatement",
+                                                  "iterator": {
+                                                    "kind": "Identifier",
+                                                    "name": "i"
+                                                  },
+                                                  "limit": {
+                                                    "kind": "MemberAttribute",
+                                                    "member": {
+                                                      "kind": "FunctionCall",
+                                                      "identifier": {
+                                                        "kind": "Identifier",
+                                                        "name": "a"
+                                                      },
+                                                      "arguments": []
+                                                    },
+                                                    "attribute": {
+                                                      "kind": "Identifier",
+                                                      "name": "b"
+                                                    }
+                                                  },
+                                                  "body": [
+                                                    {
+                                                      "kind": "FunctionCall",
+                                                      "identifier": {
+                                                        "kind": "Identifier",
+                                                        "name": "print"
+                                                      },
+                                                      "arguments": [
+                                                        {
+                                                          "kind": "Identifier",
+                                                          "name": "i"
+                                                        }
+                                                      ]
+                                                    }
+                                                  ]
+                                                }
+                                              ]
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }`;
+
         parserTest(source, JSON.parse(expected));
     });
 });

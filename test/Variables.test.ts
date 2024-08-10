@@ -85,7 +85,7 @@ describe("Variables declarations and assignment", () => {
                                           }
                                         }
                                       ],
-                                      "operator": "=",
+                                      "operator": 21,
                                       "values": [
                                         {
                                           "kind": "FunctionCall",
@@ -155,7 +155,7 @@ describe("Variables declarations and assignment", () => {
                                           }
                                         }
                                       ],
-                                      "operator": "=",
+                                      "operator": 21,
                                       "values": [
                                         {
                                           "kind": "Number",
@@ -184,7 +184,7 @@ describe("Variables declarations and assignment", () => {
                                           }
                                         }
                                       ],
-                                      "operator": "=",
+                                      "operator": 21,
                                       "values": [
                                         {
                                           "kind": "ArrayElement",
@@ -226,7 +226,7 @@ describe("Variables declarations and assignment", () => {
                                           }
                                         }
                                       ],
-                                      "operator": "=",
+                                      "operator": 21,
                                       "values": [
                                         {
                                           "kind": "BinaryExpression",
@@ -244,7 +244,7 @@ describe("Variables declarations and assignment", () => {
                                               },
                                               {
                                                 "kind": "MemberAttribute",
-                                                "object": {
+                                                "member": {
                                                   "kind": "Identifier",
                                                   "name": "x"
                                                 },
@@ -293,7 +293,7 @@ describe("Variables declarations and assignment", () => {
                                           }
                                         }
                                       ],
-                                      "operator": "=",
+                                      "operator": 21,
                                       "values": [
                                         {
                                           "kind": "Number",
