@@ -1,4 +1,5 @@
 import {
+    ArrayNode,
     Expression,
     FString,
     Identifier,
@@ -10,6 +11,8 @@ import {
 import { SymbolTable } from "./SymbolTable";
 import { DayError } from "./Error";
 
+const EMPTY = '$_empty_$';
+
 export class TypeChecker {
     constructor(
         private readonly ast: Program,
@@ -18,6 +21,12 @@ export class TypeChecker {
 
     check() {
         this.visitProgram(this.ast);
+    }
+
+    private compareTypes(type1: string, type2: string): boolean {
+        if (type1 === type2) return true;
+        return type1 === EMPTY || type2 === EMPTY;
+
     }
 
     private throwError(message: string): never {
@@ -49,7 +58,7 @@ export class TypeChecker {
                     ? this.visitIdentifier((operation as VariableDeclaration).identifier)
                     : this.visitExpression((operation as VariableAssignment).element);
 
-                if (operationType !== exprType) {
+                if (!this.compareTypes(exprType, operationType)) {
                     this.throwError(`Type mismatch: cannot assign a value of type '${exprType}' to a variable of type '${operationType}'.`);
                 }
             });
@@ -62,7 +71,7 @@ export class TypeChecker {
                 ? this.visitIdentifier((operation as VariableDeclaration).identifier)
                 : this.visitExpression((operation as VariableAssignment).element);
 
-            if (operationType !== exprsType[index]) {
+            if (!this.compareTypes(exprsType[index], operationType)) {
                 this.throwError(`Type mismatch: cannot assign a value of type '${exprsType[index]}' to a variable of type '${operationType}'.`);
             }
         });
@@ -78,11 +87,28 @@ export class TypeChecker {
                 return 'bool';
             case 'F-String':
                 return this.visitFString(node as FString);
+            case 'Array':
+                return this.visitArray(node as ArrayNode);
             case 'Identifier':
                 return this.visitIdentifier(node as Identifier);
             default:
                 return this.throwError(`Unknown expression type: ${node.kind}`);
         }
+    }
+
+    private visitFString(node: FString) {
+        node.value.forEach(exp => {const type = this.visitExpression(exp); if (type !== 'str' && type !== 'num' && type != 'bool' && type !== EMPTY) this.throwError('F-String expressions must be of common type.')});
+        return 'str';
+    }
+
+    private visitArray(node: ArrayNode) {
+        const arrayTypes = node.elements.map(element => this.visitExpression(element));
+        if (arrayTypes.length === 0) return EMPTY;
+        let type = arrayTypes[0];
+        if (arrayTypes.every(t => {if (type === EMPTY) {type = t; return true; } return t === EMPTY || t === type})) {
+            return type + '[]';
+        }
+        return this.throwError('Array elements must be of the same type.');
     }
 
     private visitIdentifier(node: Identifier): string {
@@ -91,10 +117,5 @@ export class TypeChecker {
             this.throwError(`Variable '${node.name}' is not declared.`);
         }
         return variableType;
-    }
-
-    private visitFString(node: FString) {
-        node.value.forEach(exp => {const type = this.visitExpression(exp); if (type !== 'str' && type !== 'num' && type != 'bool') this.throwError('F-String expressions must be of common type.')});
-        return 'str';
     }
 }

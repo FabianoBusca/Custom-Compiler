@@ -547,6 +547,7 @@ export class Parser {
             do {
                 elements.push(this.parseExpression());
             } while (this.match(Tag.COMMA));
+            this.expect(Tag.RSP);
         }
         return { kind: "Array", elements };
     }
