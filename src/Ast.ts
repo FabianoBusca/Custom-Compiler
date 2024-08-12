@@ -1,6 +1,6 @@
 import {Tag} from "./Token";
 
-type NodeType = 'Program' | 'Statement' | 'IfStatement' | 'WhileStatement' | 'ForStatement' | 'SwitchStatement' | 'CaseStatement' | 'VariableOperations' | 'VariableDeclaration' | 'VariableAssignment' | 'Identifier' | 'FunctionDeclaration' | 'ClassDeclaration' | 'MemberFunctionCall' | 'MemberAttribute' | 'UnaryExpression' | 'ArrayElement' | 'FunctionCall' | 'LogicalExpression' | 'BinaryExpression' | 'Number' | 'String' | 'Boolean' | 'F-String' | 'Array';
+type NodeType = 'Program' | 'IfStatement' | 'WhileStatement' | 'ForStatement' | 'SwitchStatement' | 'CaseStatement' | 'VariableOperations' | 'VariableDeclaration' | 'VariableAssignment' | 'Identifier' | 'FunctionDeclaration' | 'ClassDeclaration' | 'MemberFunctionCall' | 'MemberAttribute' | 'UnaryExpression' | 'ArrayElement' | 'FunctionCall' | 'LogicalExpression' | 'BinaryExpression' | 'Number' | 'String' | 'Boolean' | 'F-String' | 'Array';
 export interface ASTNode {
     kind: NodeType;
 }

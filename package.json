@@ -9,6 +9,7 @@
     "lex": "tsx src/Day.ts -L",
     "parse": "tsx src/Day.ts -P",
     "symbols": "tsx src/Day.ts -S",
+    "type": "tsx src/Day.ts -T",
     "test": "jest"
   },
   "keywords": [],

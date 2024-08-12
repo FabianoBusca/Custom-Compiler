@@ -1,31 +1,15 @@
-interface VariableEntry {
-    type: string;
-    scopeLevel: number;
-}
-
-interface FunctionEntry {
-    returnTypes: string[];
-    scopeLevel: number;
-    parameters: { type: string, name: string }[];
-    scope: SymbolTable;
-}
-
-interface ClassEntry {
-    scope: SymbolTable;
-}
+import {ClassEntry, FunctionEntry, VariableEntry} from "./SymbolsEntry";
 
 export class SymbolTable {
     private readonly variableTable: Map<string, VariableEntry>;
     private readonly functionTable: Map<string, FunctionEntry>;
     private readonly classTable: Map<string, ClassEntry>;
-    private readonly parent: SymbolTable | null;
     private readonly scopeLevel: number;
 
-    constructor(parent: SymbolTable | null = null) {
+    constructor(private readonly parent: SymbolTable | null = null) {
         this.variableTable = new Map<string, VariableEntry>();
         this.functionTable = new Map<string, FunctionEntry>();
         this.classTable = new Map<string, ClassEntry>();
-        this.parent = parent;
         this.scopeLevel = parent ? parent.scopeLevel + 1 : 0;
     }
 
@@ -52,11 +36,11 @@ export class SymbolTable {
         return true;
     }
 
-    public lookup(name: string): VariableEntry | FunctionEntry | null {
+    public variableLookup(name: string): VariableEntry | null {
         if (this.variableTable.has(name)) {
             return this.variableTable.get(name) || null;
         } else if (this.parent !== null) {
-            return this.parent.lookup(name);
+            return this.parent.variableLookup(name);
         }
         return null;
     }

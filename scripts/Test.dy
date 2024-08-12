@@ -1,14 +1,2 @@
-class Dog = {
-    str name, int age
-
-    _ = bark() {
-        str s = "Woof"
-        console.log(s)
-    }
-}
-
-Dog d = Dog()
-d.bark()
-
-Dog = getDog(str name) {}
-Dog d2 = getDog("Rex")
+num x, num y, str z = 7, 4, 'hello {x} {y}'
+x, y = 4

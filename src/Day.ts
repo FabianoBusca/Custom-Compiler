@@ -3,6 +3,7 @@ import * as path from "path";
 import {Lexer} from "./Lexer";
 import {Parser} from "./Parser";
 import {SymbolTableBuilder} from "./SymbolTableBuilder";
+import {TypeChecker} from "./TypeChecker";
 
 const scriptsPath = './scripts';
 function compile(source: string, flag: string) {
@@ -33,6 +34,13 @@ function compile(source: string, flag: string) {
         return;
     }
 
+    const typeChecker = new TypeChecker(ast, symbolTable);
+    typeChecker.check();
+
+    if (flag === '-T') {
+        return;
+    }
+
     console.log("Parsing...");
 }
 
@@ -43,7 +51,7 @@ async function main() {
         return;
     }
 
-    const flags = ['-L', '-P', '-S'];
+    const flags = ['-L', '-P', '-S', '-T'];
 
     if (process.argv.length == 4 && !flags.includes(process.argv[2])) {
         console.error("Usage...");

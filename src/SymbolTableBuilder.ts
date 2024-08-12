@@ -14,7 +14,7 @@ export class SymbolTableBuilder {
         return this.scope;
     }
 
-    private error(message: string) {
+    private error(message: string): never {
         throw DayError.semanticError(message);
     }
 
