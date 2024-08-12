@@ -2,6 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 import {Lexer} from "./Lexer";
 import {Parser} from "./Parser";
+import {SymbolTableBuilder} from "./SymbolTableBuilder";
 
 const scriptsPath = './scripts';
 function compile(source: string, flag: string) {
@@ -24,6 +25,14 @@ function compile(source: string, flag: string) {
         return;
     }
 
+    const symbolTableBuilder = new SymbolTableBuilder(ast);
+    const symbolTable = symbolTableBuilder.build();
+
+    if (flag === '-S') {
+        console.log(symbolTable.toString())
+        return;
+    }
+
     console.log("Parsing...");
 }
 
@@ -34,7 +43,7 @@ async function main() {
         return;
     }
 
-    const flags = ['-L', '-P', '-A'];
+    const flags = ['-L', '-P', '-S'];
 
     if (process.argv.length == 4 && !flags.includes(process.argv[2])) {
         console.error("Usage...");

@@ -127,7 +127,7 @@ export class Lexer {
     }
 
     private error(message: string): never {
-        throw new DayError(message, this.line, this.column - 2, this.source.split('\n')[this.line - 1]);
+        throw DayError.syntaxError(message, this.line, this.column - 2, this.source.split('\n')[this.line - 1]);
     }
 
     private lexRCP(): void {

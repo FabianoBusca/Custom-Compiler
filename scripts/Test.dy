@@ -1,13 +1,14 @@
-while (-a().b.length() == 1) {
-                                    if (a().b[0] == 1) {
-                                        for (i, 5 + a().b.length()) {
-                                            print(i)
-                                        }
-                                    } else {
-                                        switch (x % 2 == 0) {
-                                            for (i, a().b) {
-                                                print(i)
-                                            }
-                                        }
-                                    }
-                                }
+class Dog = {
+    str name, int age
+
+    _ = bark() {
+        str s = "Woof"
+        console.log(s)
+    }
+}
+
+Dog d = Dog()
+d.bark()
+
+Dog = getDog(str name) {}
+Dog d2 = getDog("Rex")

@@ -64,7 +64,7 @@ export class Parser {
     }
     private error(message: string): never {
         const token = this.tokens[this.index];
-        throw new DayError(message, token.line, token.column, this.source[token.line - 1]);
+        throw DayError.syntaxError(message, token.line, token.column, this.source[token.line - 1]);
     }
     private parseStatement(): Statement {
         if (this.check(Tag.NUM, Tag.STR, Tag.BOOL, Tag.UNDERSCORE, Tag.THIS, Tag.ID)) {
