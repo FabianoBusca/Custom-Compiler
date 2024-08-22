@@ -1,4 +1,4 @@
-import {Tag, Token} from "./Token";
+import {Tag, Token} from "../data";
 import {
     Expression,
     Identifier,
@@ -25,8 +25,8 @@ import {
     ClassDeclaration,
     FunctionCall,
     SwitchStatement
-} from "./AST";
-import {DayError} from "./Error";
+} from "../data/ast";
+import {DayError} from "../utils/error";
 
 export class Parser {
     // TODO: null

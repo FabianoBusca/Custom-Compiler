@@ -1,4 +1,4 @@
-import {parserTest} from "./Utils";
+import {parserTest} from "../utils/utils";
 
 describe("Class Declarations", () => {
     test("Class declaration - 1", () => {

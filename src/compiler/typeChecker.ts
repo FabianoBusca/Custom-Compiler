@@ -1,15 +1,14 @@
 import {
     ArrayNode,
     Expression,
-    FString,
-    Identifier,
-    Program,
+    FString, Identifier,
+    Program, Statement,
+    SymbolTable,
     VariableAssignment,
     VariableDeclaration,
     VariableOperations
-} from "./Ast";
-import { SymbolTable } from "./SymbolTable";
-import { DayError } from "./Error";
+} from "../data";
+import { DayError } from "../utils/error";
 
 const EMPTY = '$_empty_$';
 
@@ -37,11 +36,13 @@ export class TypeChecker {
         program.body.forEach(statement => this.visitNode(statement));
     }
 
-    private visitNode(node: VariableOperations | VariableAssignment | VariableDeclaration | Expression) {
+    private visitNode(node: Statement) {
         switch (node.kind) {
             case 'VariableOperations':
                 this.visitVariableOperations(node as VariableOperations);
                 break;
+            // case 'FunctionCall':
+            //     break;
             default:
                 this.throwError(`Unsupported node kind: ${node.kind}`);
         }
@@ -65,7 +66,11 @@ export class TypeChecker {
             return;
         }
 
-        const exprsType = node.values.map(value => this.visitExpression(value));
+        const exprsType = []
+        node.values.forEach(expr => exprsType.push(this.visitExpression(expr)));
+
+        if (exprsType.length !== node.operations.length) this.throwError('Number of expressions and variables do not match.');
+
         node.operations.forEach((operation, index) => {
             const operationType = operation.kind === 'VariableDeclaration'
                 ? this.visitIdentifier((operation as VariableDeclaration).identifier)
@@ -95,7 +100,7 @@ export class TypeChecker {
                 return this.throwError(`Unknown expression type: ${node.kind}`);
         }
     }
-
+    
     private visitFString(node: FString) {
         node.value.forEach(exp => {const type = this.visitExpression(exp); if (type !== 'str' && type !== 'num' && type != 'bool' && type !== EMPTY) this.throwError('F-String expressions must be of common type.')});
         return 'str';

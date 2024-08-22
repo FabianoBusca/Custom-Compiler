@@ -1,4 +1,4 @@
-import {SymbolTable} from "./SymbolTable";
+import {SymbolTable} from "./symbolTable";
 
 export interface VariableEntry {
     type: string;

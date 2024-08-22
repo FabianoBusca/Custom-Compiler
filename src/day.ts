@@ -1,11 +1,8 @@
 import * as fs from "fs";
 import * as path from "path";
-import {Lexer} from "./Lexer";
-import {Parser} from "./Parser";
-import {SymbolTableBuilder} from "./SymbolTableBuilder";
-import {TypeChecker} from "./TypeChecker";
+import {Lexer, Parser, SymbolTableBuilder, TypeChecker} from "./compiler";
 
-const scriptsPath = './scripts';
+const scriptsPath = './tests';
 function compile(source: string, flag: string) {
     source = source.replace('\n\r', '\n');
     const lexer = new Lexer(source);

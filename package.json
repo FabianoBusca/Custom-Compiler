@@ -5,11 +5,11 @@
   "main": "index.ts",
   "type": "module",
   "scripts": {
-    "start": "tsx src/Day.ts",
-    "lex": "tsx src/Day.ts -L",
-    "parse": "tsx src/Day.ts -P",
-    "symbols": "tsx src/Day.ts -S",
-    "type": "tsx src/Day.ts -T",
+    "start": "tsx src/day.ts",
+    "lex": "tsx src/day.ts -L",
+    "parse": "tsx src/day.ts -P",
+    "symbols": "tsx src/day.ts -S",
+    "type": "tsx src/day.ts -T",
     "test": "jest"
   },
   "keywords": [],

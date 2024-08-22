@@ -1,5 +1,5 @@
-import {Tag, Token} from "./Token";
-import {DayError} from "./Error";
+import {Tag, Token} from "../data";
+import {DayError} from "../utils/error";
 
 // TODO unclosed comments are weird
 export class Lexer {

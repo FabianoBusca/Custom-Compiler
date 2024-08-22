@@ -1,4 +1,4 @@
-import {parserTest} from "./Utils";
+import {parserTest} from "../utils/utils";
 
 describe("Variables declarations and assignment", () => {
 
@@ -320,6 +320,84 @@ describe("Variables declarations and assignment", () => {
                                     }
                                   ]
                                 }`;
+        parserTest(source, JSON.parse(expected));
+    });
+
+    test("Variable assignment - 4", () => {
+        const source = `num[][] a = [[], [1, 2, 3, 4, 5], [1, 3], []]`;
+        const expected = `{
+                                  "kind": "Program",
+                                  "body": [
+                                    {
+                                      "kind": "VariableOperations",
+                                      "operations": [
+                                        {
+                                          "kind": "VariableDeclaration",
+                                          "type": "num[][]",
+                                          "identifier": {
+                                            "kind": "Identifier",
+                                            "name": "a"
+                                          }
+                                        }
+                                      ],
+                                      "operator": 21,
+                                      "values": [
+                                        {
+                                          "kind": "Array",
+                                          "elements": [
+                                            {
+                                              "kind": "Array",
+                                              "elements": []
+                                            },
+                                            {
+                                              "kind": "Array",
+                                              "elements": [
+                                                {
+                                                  "kind": "Number",
+                                                  "value": 1
+                                                },
+                                                {
+                                                  "kind": "Number",
+                                                  "value": 2
+                                                },
+                                                {
+                                                  "kind": "Number",
+                                                  "value": 3
+                                                },
+                                                {
+                                                  "kind": "Number",
+                                                  "value": 4
+                                                },
+                                                {
+                                                  "kind": "Number",
+                                                  "value": 5
+                                                }
+                                              ]
+                                            },
+                                            {
+                                              "kind": "Array",
+                                              "elements": [
+                                                {
+                                                  "kind": "Number",
+                                                  "value": 1
+                                                },
+                                                {
+                                                  "kind": "Number",
+                                                  "value": 3
+                                                }
+                                              ]
+                                            },
+                                            {
+                                              "kind": "Array",
+                                              "elements": []
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }`;
+
         parserTest(source, JSON.parse(expected));
     });
 });

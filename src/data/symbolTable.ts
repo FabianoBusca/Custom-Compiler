@@ -1,4 +1,4 @@
-import {ClassEntry, FunctionEntry, VariableEntry} from "./SymbolsEntry";
+import {ClassEntry, FunctionEntry, VariableEntry} from "./symbolEntry";
 
 export class SymbolTable {
     private readonly variableTable: Map<string, VariableEntry>;
@@ -43,10 +43,6 @@ export class SymbolTable {
             return this.parent.variableLookup(name);
         }
         return null;
-    }
-
-    public existsInCurrentScope(name: string): boolean {
-        return this.variableTable.has(name);
     }
 
     public createChildScope(): SymbolTable {

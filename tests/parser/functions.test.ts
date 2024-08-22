@@ -1,4 +1,4 @@
-import { parserTest } from "./utils";
+import { parserTest } from "../utils/utils";
 
 describe("Function calls and declarations", () => {
 
