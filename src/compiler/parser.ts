@@ -25,7 +25,7 @@ import {
     ClassDeclaration,
     FunctionCall,
     SwitchStatement
-} from "../data/ast";
+} from "../data";
 import {DayError} from "../utils/error";
 
 export class Parser {

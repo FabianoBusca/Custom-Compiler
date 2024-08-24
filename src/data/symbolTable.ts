@@ -45,6 +45,15 @@ export class SymbolTable {
         return null;
     }
 
+    public functionLookup(name: string): FunctionEntry | null {
+        if (this.functionTable.has(name)) {
+            return this.functionTable.get(name) || null;
+        } else if (this.parent !== null) {
+            return this.parent.functionLookup(name);
+        }
+        return null;
+    }
+
     public createChildScope(): SymbolTable {
         return new SymbolTable(this);
     }

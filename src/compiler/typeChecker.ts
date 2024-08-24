@@ -1,7 +1,7 @@
 import {
     ArrayNode,
     Expression,
-    FString, Identifier,
+    FString, FunctionCall, FunctionDeclaration, Identifier,
     Program, Statement,
     SymbolTable,
     VariableAssignment,
@@ -9,13 +9,14 @@ import {
     VariableOperations
 } from "../data";
 import { DayError } from "../utils/error";
+import assert from "assert";
 
 const EMPTY = '$_empty_$';
 
 export class TypeChecker {
     constructor(
         private readonly ast: Program,
-        private readonly symbolTable: SymbolTable
+        private symbolTable: SymbolTable
     ) {}
 
     check() {
@@ -41,48 +42,82 @@ export class TypeChecker {
             case 'VariableOperations':
                 this.visitVariableOperations(node as VariableOperations);
                 break;
+            case 'FunctionDeclaration':
+                this.visitFunctionDeclaration(node as FunctionDeclaration);
+                break;
             // case 'FunctionCall':
             //     break;
             default:
-                this.throwError(`Unsupported node kind: ${node.kind}`);
+                this.throwError(`Unknown statement type: ${node.kind}`);
         }
     }
 
     private visitVariableOperations(node: VariableOperations) {
         if (node.values.length === 0) return;
 
-        if (node.values.length === 1) {
-            const exprType = this.visitExpression(node.values[0]);
+        const valuesTypes = node.values.flatMap(value => this.visitExpression(value));
 
+        if (valuesTypes.length === 1) {
             node.operations.forEach(operation => {
                 const operationType = operation.kind === 'VariableDeclaration'
                     ? this.visitIdentifier((operation as VariableDeclaration).identifier)
-                    : this.visitExpression((operation as VariableAssignment).element);
+                    : this.visitSimpleExpression((operation as VariableAssignment).element);
 
-                if (!this.compareTypes(exprType, operationType)) {
-                    this.throwError(`Type mismatch: cannot assign a value of type '${exprType}' to a variable of type '${operationType}'.`);
+                if (!this.compareTypes(valuesTypes[0], operationType)) {
+                    this.throwError(`Type mismatch: cannot assign a value of type '${valuesTypes[0]}' to a variable of type '${operationType}'.`);
                 }
             });
             return;
         }
 
-        const exprsType = []
-        node.values.forEach(expr => exprsType.push(this.visitExpression(expr)));
-
-        if (exprsType.length !== node.operations.length) this.throwError('Number of expressions and variables do not match.');
+        if (valuesTypes.length !== node.operations.length) this.throwError('Number of expressions and variables do not match.');
 
         node.operations.forEach((operation, index) => {
             const operationType = operation.kind === 'VariableDeclaration'
                 ? this.visitIdentifier((operation as VariableDeclaration).identifier)
-                : this.visitExpression((operation as VariableAssignment).element);
+                : this.visitSimpleExpression((operation as VariableAssignment).element);
 
-            if (!this.compareTypes(exprsType[index], operationType)) {
-                this.throwError(`Type mismatch: cannot assign a value of type '${exprsType[index]}' to a variable of type '${operationType}'.`);
+            if (!this.compareTypes(valuesTypes[index], operationType)) {
+                this.throwError(`Type mismatch: cannot assign a value of type '${valuesTypes[index]}' to a variable of type '${operationType}'.`);
             }
         });
     }
 
-    private visitExpression(node: Expression): string {
+    private visitFunctionDeclaration(node: FunctionDeclaration) {
+        this.symbolTable = this.symbolTable.functionLookup(node.identifier.name)?.scope || null;
+        if (!this.symbolTable) this.throwError(`Function '${node.identifier.name}' is not declared.`);
+        node.body.forEach(statement => this.visitNode(statement));
+        this.symbolTable = this.symbolTable.getParentScope();
+        assert(this.symbolTable); // should never be null
+    }
+
+    private visitExpression(node: Expression): string[] {
+        if (node.kind === 'FunctionCall') {
+            return this.visitFunctionCall(node as FunctionCall)
+        }
+        return [this.visitSimpleExpression(node)];
+    }
+
+    private visitFunctionCall(node: FunctionCall): string[] {
+
+        const functionDeclaration = this.symbolTable.functionLookup(node.identifier.name);
+        if (!functionDeclaration) {
+            this.throwError(`Function '${node.identifier.name}' is not declared.`);
+        }
+
+        const argumentsType = node.arguments.flatMap(value => this.visitExpression(value));
+        if (argumentsType.length !== functionDeclaration.parameters.length) this.throwError('Number of argument does not match the declaration.');
+
+        node.arguments.forEach((argument, index) => {
+            if (!this.compareTypes(argumentsType[index], functionDeclaration.parameters[index].type)) {
+                this.throwError(`Type mismatch: cannot assign a value of type '${argumentsType[index]}' to a parameter of type '${functionDeclaration.parameters[index].type}'.`);
+            }
+        });
+
+        return functionDeclaration.returnTypes;
+    }
+
+    private visitSimpleExpression(node: Expression): string {
         switch (node.kind) {
             case 'Number':
                 return 'num';
@@ -102,12 +137,12 @@ export class TypeChecker {
     }
     
     private visitFString(node: FString) {
-        node.value.forEach(exp => {const type = this.visitExpression(exp); if (type !== 'str' && type !== 'num' && type != 'bool' && type !== EMPTY) this.throwError('F-String expressions must be of common type.')});
+        node.value.forEach(exp => {const type = this.visitSimpleExpression(exp); if (type !== 'str' && type !== 'num' && type != 'bool' && type !== EMPTY) this.throwError('F-String expressions must be of common type.')});
         return 'str';
     }
 
     private visitArray(node: ArrayNode) {
-        const arrayTypes = node.elements.map(element => this.visitExpression(element));
+        const arrayTypes = node.elements.map(element => this.visitSimpleExpression(element));
         if (arrayTypes.length === 0) return EMPTY;
         let type = arrayTypes[0];
         if (arrayTypes.every(t => {if (type === EMPTY) {type = t; return true; } return t === EMPTY || t === type})) {
