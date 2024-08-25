@@ -1,14 +1,15 @@
 import {Tag, Token} from "../data";
-import {DayError} from "../utils/error";
+import {DayErr} from "../utils/dayErr";
 
-// TODO unclosed comments are weird
 export class Lexer {
     private readonly source: string;
     private position: number = 0;
     private isString: boolean = false;
     private line: number = 1;
     private column: number = 1;
-    private tokens: Token[] = [];
+
+    private readonly errors: DayErr[] = [];
+    private readonly tokens: Token[] = [];
 
     private static KEYWORDS: Map<string, Tag> = new Map([
         ['if', Tag.IF], ['else', Tag.ELSE], ['while', Tag.WHILE],
@@ -24,44 +25,51 @@ export class Lexer {
         this.source = source;
     }
 
-    tokenize(): Token[] {
-        while (!this.isEOF()) {
-            this.skipWhitespace();
-            if (this.isEOF()) break;
+    tokenize(): boolean {
+        try {
+            while (!this.isEOF()) {
+                this.skipWhitespace();
+                if (this.isEOF()) break;
 
-            const char = this.peek();
-            switch (char) {
-                case '%': this.addToken(Tag.MOD, this.advance()); break;
-                case '&': this.addToken(Tag.AND, this.advance()); break;
-                case '|': this.addToken(Tag.OR, this.advance()); break;
-                case '(': this.addToken(Tag.LRP, this.advance()); break;
-                case ')': this.addToken(Tag.RRP, this.advance()); break;
-                case '[': this.addToken(Tag.LSP, this.advance()); break;
-                case ']': this.addToken(Tag.RSP, this.advance()); break;
-                case '{': this.addToken(Tag.LCP, this.advance()); break;
-                case '}': this.lexRCP(); break;
-                case ',': this.addToken(Tag.COMMA, this.advance()); break;
-                case '.': this.addToken(Tag.DOT, this.advance()); break;
-                case '+': this.lexPlus(); break;
-                case '-': this.lexMinus(); break;
-                case '*': this.lexStar(); break;
-                case '/': this.lexSlash(); break;
-                case '>': this.lexGreater(); break;
-                case '<': this.lexLess(); break;
-                case '=': this.lexEqual(); break;
-                case '!': this.lexNot(); break;
-                case '"': this.lexString(); break;
-                case "'": this.lexFString(); break;
-                case '#': this.ignoreSingleComment(); break;
-                default:
-                    if (this.isDigit(char)) this.lexNumber();
-                    else if (this.isAlpha(char)) this.lexIdentifierOrKeyword();
-                    else this.error(`Unexpected character: ${char}`);
+                const char = this.peek();
+                switch (char) {
+                    case '%': this.addToken(Tag.MOD, this.advance()); break;
+                    case '&': this.addToken(Tag.AND, this.advance()); break;
+                    case '|': this.addToken(Tag.OR, this.advance()); break;
+                    case '(': this.addToken(Tag.LRP, this.advance()); break;
+                    case ')': this.addToken(Tag.RRP, this.advance()); break;
+                    case '[': this.addToken(Tag.LSP, this.advance()); break;
+                    case ']': this.addToken(Tag.RSP, this.advance()); break;
+                    case '{': this.addToken(Tag.LCP, this.advance()); break;
+                    case '}': this.lexRCP(); break;
+                    case ',': this.addToken(Tag.COMMA, this.advance()); break;
+                    case '.': this.addToken(Tag.DOT, this.advance()); break;
+                    case '+': this.lexPlus(); break;
+                    case '-': this.lexMinus(); break;
+                    case '*': this.lexStar(); break;
+                    case '/': this.lexSlash(); break;
+                    case '>': this.lexGreater(); break;
+                    case '<': this.lexLess(); break;
+                    case '=': this.lexEqual(); break;
+                    case '!': this.lexNot(); break;
+                    case '"': this.lexString(); break;
+                    case "'": this.lexFString(); break;
+                    case '#': this.ignoreSingleComment(); break;
+                    default:
+                        if (this.isDigit(char)) this.lexNumber();
+                        else if (this.isAlpha(char)) this.lexIdentifierOrKeyword();
+                        else this.error(`Unexpected character: ${char}`);
+                }
             }
+        } catch (error) {
+            if (error instanceof DayErr) {
+                return false;
+            }
+            throw error;
         }
 
         this.addToken(Tag.EOF);
-        return this.tokens;
+        return true;
     }
 
     private addToken(tag: Tag, value: string = ''): void {
@@ -126,8 +134,12 @@ export class Lexer {
         return this.isAlpha(char) || this.isDigit(char);
     }
 
-    private error(message: string): never {
-        throw DayError.syntaxError(message, this.line, this.column - 2, this.source.split('\n')[this.line - 1]);
+    private error(message: string): void {
+        const error = new DayErr(message, "Syntax Error", this.line,this.column - 1, this.source.split('\n')[this.line - 1]);
+        this.errors.push(error);
+        this.advance();
+        // TODO shouldn't be thrown here
+        throw error;
     }
 
     private lexRCP(): void {
@@ -140,7 +152,10 @@ export class Lexer {
     private lexText(): void {
         let value = '';
         while (this.peek() !== "'" && this.peek() !== '{' && !this.isEOF()) {
-            if (this.peek() === '\n') this.line++;
+            if (this.peek() === '\n') {
+                this.line++;
+                this.column = 0;
+            }
             value += this.advance();
         }
 
@@ -283,7 +298,10 @@ export class Lexer {
 
     private ignoreMultiComment(): void {
         while (!this.isEOF() && !(this.peek() === '>' && this.peekNext() === '>')) {
-            if (this.peek() === '\n') this.line++;
+            if (this.peek() === '\n') {
+                this.line++;
+                this.column = 0;
+            }
             this.advance();
         }
 
@@ -298,5 +316,13 @@ export class Lexer {
 
     private ignoreSingleComment(): void {
         while (this.peek() !== '\n' && !this.isEOF()) this.advance();
+    }
+
+    public getTokens(): Token[] {
+        return this.tokens;
+    }
+
+    public getErrors(): DayErr[] {
+        return this.errors;
     }
 }

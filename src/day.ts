@@ -6,12 +6,19 @@ const scriptsPath = './tests';
 function compile(source: string, flag: string) {
     source = source.replace('\n\r', '\n');
     const lexer = new Lexer(source);
-    const tokens = lexer.tokenize();
+    lexer.tokenize();
+    const errors = lexer.getErrors();
+    if (errors.length > 0) {
+        errors.forEach(error => {
+            console.error(error.toString());
+        });
+        return;
+    }
+
+    const tokens = lexer.getTokens();
 
     if (flag === '-L') {
-        tokens.forEach(token => {
-            console.log(token);
-        });
+        console.log(tokens);
         return;
     }
 
@@ -38,7 +45,6 @@ function compile(source: string, flag: string) {
         return;
     }
 
-    console.log("Parsing...");
 }
 
 async function main() {
