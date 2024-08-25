@@ -1,30 +1,35 @@
 import {ClassEntry, FunctionEntry, VariableEntry} from "./symbolEntry";
 
+const BUILT_IN_TYPES = ["num", "str", "bool", "_"];
+
 export class SymbolTable {
     private readonly variableTable: Map<string, VariableEntry>;
     private readonly functionTable: Map<string, FunctionEntry>;
     private readonly classTable: Map<string, ClassEntry>;
-    private readonly scopeLevel: number;
 
     constructor(private readonly parent: SymbolTable | null = null) {
         this.variableTable = new Map<string, VariableEntry>();
         this.functionTable = new Map<string, FunctionEntry>();
         this.classTable = new Map<string, ClassEntry>();
-        this.scopeLevel = parent ? parent.scopeLevel + 1 : 0;
     }
 
     public addVariable(name: string, type: string): boolean {
         if (this.variableTable.has(name)) return false;
-        this.variableTable.set(name, { type, scopeLevel: this.scopeLevel });
+        const baseType = type.replace(/\[]/g, '');
+        if (!BUILT_IN_TYPES.includes(baseType) && !this.classLookup(baseType)) return false;
+        this.variableTable.set(name, { type });
         return true;
     }
 
     public addFunction(name: string, returnTypes: string[] = ["_"], parameters: { type: string, name: string }[] = [], scope: SymbolTable): boolean {
         if (this.functionTable.has(name)) return false;
+        if (returnTypes.some(type => {
+            const baseType = type.replace(/\[]/g, '');
+            return (!BUILT_IN_TYPES.includes(baseType) && !this.classLookup(baseType));
+        })) return false;
         this.functionTable.set(name, {
             returnTypes,
             parameters,
-            scopeLevel: this.scopeLevel,
             scope
         });
         return true;
@@ -54,6 +59,15 @@ export class SymbolTable {
         return null;
     }
 
+    public classLookup(name: string): ClassEntry | null {
+        if (this.classTable.has(name)) {
+            return this.classTable.get(name) || null;
+        } else if (this.parent !== null) {
+            return this.parent.classLookup(name);
+        }
+        return null;
+    }
+
     public createChildScope(): SymbolTable {
         return new SymbolTable(this);
     }
@@ -63,7 +77,7 @@ export class SymbolTable {
     }
 
     public toString(indent: string = ''): string {
-        let result = `${indent}Symbol Table (level ${this.scopeLevel}):\n${indent}{\n`;
+        let result = `${indent}Symbol Table:\n${indent}{\n`;
 
         // Classes section
         if (this.classTable.size > 0) {

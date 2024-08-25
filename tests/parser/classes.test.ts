@@ -152,11 +152,7 @@ describe("Class Declarations", () => {
                                           "parameters": [],
                                           "body": [
                                             {
-                                              "kind": "FunctionCall",
-                                              "identifier": {
-                                                "kind": "Identifier",
-                                                "name": "print"
-                                              },
+                                              "kind": "PrintStatement",
                                               "arguments": [
                                                 {
                                                   "kind": "F-String",

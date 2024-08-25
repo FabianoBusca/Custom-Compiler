@@ -1,4 +1,4 @@
-import {Tag, Token} from "../data";
+import {PrintStatement, ReadStatement, ReturnStatement, Tag, Token} from "../data";
 import {
     Expression,
     Identifier,
@@ -92,7 +92,7 @@ export class Parser {
         this.error("Unexpected token");
     }
     private parseDeclaration(elements: Identifier[]): Statement {
-        if (this.check(Tag.STR, Tag.NUM, Tag.BOOL) || (this.check(Tag.ID) && this.peek(1) === Tag.LSP && this.peek(1) === Tag.RSP)) {
+        if (this.check(Tag.STR, Tag.NUM, Tag.BOOL) || (this.check(Tag.ID) && this.peek(1) === Tag.LSP && this.peek(2) === Tag.RSP)) {
             return this.parseTypedDeclaration(elements);
         }
 
@@ -321,7 +321,7 @@ export class Parser {
     private parsePostfixExpression(base: Expression): Expression {
         while (true) {
             if (this.check(Tag.LSP)) {
-                base = this.parseArrayElement(base as Identifier);
+                base = this.parseArrayElement(base);
             } else if (this.match(Tag.DOT)) {
                 const identifier: Identifier = {
                     kind: "Identifier",
@@ -384,14 +384,14 @@ export class Parser {
         }
         return parameters;
     }
-    private parseArrayElement(identifier: Identifier): ArrayElement {
+    private parseArrayElement(base: Expression): ArrayElement {
         const element: ArrayElement = {
             kind: "ArrayElement",
-            array: identifier,
-            indices: [],
+            array: base,
+            indexes: [],
         };
         while (this.match(Tag.LSP)) {
-            element.indices.push(this.parseExpression());
+            element.indexes.push(this.parseExpression());
             this.expect(Tag.RSP);
         }
         return element;
@@ -556,9 +556,56 @@ export class Parser {
         this.expect(Tag.RRP);
         return expr;
     }
-    private parseBuiltInFunctionCall(): FunctionCall {
-        const func: Identifier = { kind: "Identifier", name: this.advance().value };
-        return this.parseFunctionCall(func);
+    private parseBuiltInFunctionCall(): Statement {
+        const tag = this.advance().tag;
+        if (tag === Tag.PRINT) {
+            return this.parsePrintStatement();
+        }
+        if (tag === Tag.READ) {
+            return this.parseReadStatement();
+        }
+        return this.parseReturnStatement();
+    }
+    private parsePrintStatement(): PrintStatement {
+        const statement: PrintStatement = {
+            kind: "PrintStatement",
+            arguments: []
+        };
+        this.match(Tag.LRP);
+        if (!this.match(Tag.RRP)) {
+            do {
+                statement.arguments.push(this.parseExpression());
+            } while (this.match(Tag.COMMA));
+            this.expect(Tag.RRP);
+        }
+        return statement;
+    }
+    private parseReadStatement(): ReadStatement {
+        const statement: ReadStatement = {
+            kind: "ReadStatement",
+            arguments: []
+        };
+        this.match(Tag.LRP);
+        do {
+            if (!this.check(Tag.ID)) this.error("Expected identifier");
+            statement.arguments.push(this.parsePostfixExpression({ kind: "Identifier", name: this.advance().value } as Identifier));
+        } while (this.match(Tag.COMMA));
+        this.expect(Tag.RRP);
+        return statement;
+    }
+    private parseReturnStatement(): ReturnStatement {
+        const statement: ReturnStatement = {
+            kind: "ReturnStatement",
+            values: []
+        };
+        this.match(Tag.LRP);
+        if (!this.match(Tag.RRP)) {
+            do {
+                statement.values.push(this.parseExpression());
+            } while (this.match(Tag.COMMA));
+            this.expect(Tag.RRP);
+        }
+        return statement
     }
     private parseIfStatement(): IfStatement {
         const condition = this.parseCondition();

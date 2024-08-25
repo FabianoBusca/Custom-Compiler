@@ -1,6 +1,6 @@
 import {Tag} from "./token";
 
-type NodeType = 'Program' | 'IfStatement' | 'WhileStatement' | 'ForStatement' | 'SwitchStatement' | 'CaseStatement' | 'VariableOperations' | 'VariableDeclaration' | 'VariableAssignment' | 'Identifier' | 'FunctionDeclaration' | 'ClassDeclaration' | 'MemberFunctionCall' | 'MemberAttribute' | 'UnaryExpression' | 'ArrayElement' | 'FunctionCall' | 'LogicalExpression' | 'BinaryExpression' | 'Number' | 'String' | 'Boolean' | 'F-String' | 'Array';
+type NodeType = 'Program' | 'IfStatement' | 'WhileStatement' | 'ForStatement' | 'SwitchStatement' | 'CaseStatement' | 'VariableOperations' | 'VariableDeclaration' | 'VariableAssignment' | 'Identifier' | 'FunctionDeclaration' | 'ClassDeclaration' | 'ReturnStatement' | 'PrintStatement' | 'ReadStatement' | 'MemberFunctionCall' | 'MemberAttribute' | 'UnaryExpression' | 'ArrayElement' | 'FunctionCall' | 'LogicalExpression' | 'BinaryExpression' | 'Number' | 'String' | 'Boolean' | 'F-String' | 'Array';
 export interface ASTNode {
     kind: NodeType;
 }
@@ -49,6 +49,19 @@ export interface ClassDeclaration extends Statement {
     identifier: Identifier;
     body: Statement[];
 }
+export interface ReturnStatement extends Statement {
+    kind: 'ReturnStatement';
+    values: Expression[];
+}
+export interface PrintStatement extends Statement {
+    kind: 'PrintStatement';
+    arguments: Expression[];
+}
+export interface ReadStatement extends Statement {
+    kind: 'ReadStatement';
+    // TODO: id or expr? postfix
+    arguments: Expression[];
+}
 export interface Expression extends Statement {}
 export interface FunctionCall extends Expression {
     kind: 'FunctionCall';
@@ -73,11 +86,6 @@ export interface VariableAssignment extends Statement {
 export interface Identifier extends Expression {
     kind: 'Identifier';
     name: string;
-}
-export interface ArrayElement extends Expression {
-    kind: 'ArrayElement';
-    array: Identifier;
-    indices: Expression[];
 }
 export interface MemberFunctionCall extends Expression {
     kind: 'MemberFunctionCall';
@@ -129,6 +137,6 @@ export interface ArrayNode extends Expression {
 }
 export interface ArrayElement extends Expression {
     kind: 'ArrayElement';
-    array: Identifier;
-    indices: Expression[];
+    array: Expression;
+    indexes: Expression[];
 }

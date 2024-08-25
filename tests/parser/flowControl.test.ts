@@ -45,11 +45,7 @@ describe("Flow control statements", () => {
                                       },
                                       "body": [
                                         {
-                                          "kind": "FunctionCall",
-                                          "identifier": {
-                                            "kind": "Identifier",
-                                            "name": "print"
-                                          },
+                                          "kind": "PrintStatement",
                                           "arguments": [
                                             {
                                               "kind": "String",
@@ -196,11 +192,7 @@ describe("Flow control statements", () => {
                                       },
                                       "body": [
                                         {
-                                          "kind": "FunctionCall",
-                                          "identifier": {
-                                            "kind": "Identifier",
-                                            "name": "print"
-                                          },
+                                          "kind": "PrintStatement",
                                           "arguments": [
                                             {
                                               "kind": "ArrayElement",
@@ -243,11 +235,7 @@ describe("Flow control statements", () => {
                                       },
                                       "body": [
                                         {
-                                          "kind": "FunctionCall",
-                                          "identifier": {
-                                            "kind": "Identifier",
-                                            "name": "print"
-                                          },
+                                          "kind": "PrintStatement",
                                           "arguments": [
                                             {
                                               "kind": "Identifier",
@@ -347,11 +335,7 @@ describe("Flow control statements", () => {
                                           ],
                                           "body": [
                                             {
-                                              "kind": "FunctionCall",
-                                              "identifier": {
-                                                "kind": "Identifier",
-                                                "name": "print"
-                                              },
+                                              "kind": "PrintStatement",
                                               "arguments": [
                                                 {
                                                   "kind": "String",
@@ -375,11 +359,7 @@ describe("Flow control statements", () => {
                                           ],
                                           "body": [
                                             {
-                                              "kind": "FunctionCall",
-                                              "identifier": {
-                                                "kind": "Identifier",
-                                                "name": "print"
-                                              },
+                                              "kind": "PrintStatement",                                              
                                               "arguments": [
                                                 {
                                                   "kind": "String",
@@ -408,11 +388,7 @@ describe("Flow control statements", () => {
                                           ],
                                           "body": [
                                             {
-                                              "kind": "FunctionCall",
-                                              "identifier": {
-                                                "kind": "Identifier",
-                                                "name": "print"
-                                              },
+                                              "kind": "PrintStatement",
                                               "arguments": [
                                                 {
                                                   "kind": "String",
@@ -445,11 +421,7 @@ describe("Flow control statements", () => {
                                           ]
                                         },
                                         {
-                                          "kind": "FunctionCall",
-                                          "identifier": {
-                                            "kind": "Identifier",
-                                            "name": "print"
-                                          },
+                                          "kind": "PrintStatement",                                          
                                           "arguments": [
                                             {
                                               "kind": "Identifier",
@@ -599,11 +571,7 @@ describe("Flow control statements", () => {
                                               },
                                               "body": [
                                                 {
-                                                  "kind": "FunctionCall",
-                                                  "identifier": {
-                                                    "kind": "Identifier",
-                                                    "name": "print"
-                                                  },
+                                                  "kind": "PrintStatement",
                                                   "arguments": [
                                                     {
                                                       "kind": "Identifier",
@@ -662,11 +630,7 @@ describe("Flow control statements", () => {
                                                   },
                                                   "body": [
                                                     {
-                                                      "kind": "FunctionCall",
-                                                      "identifier": {
-                                                        "kind": "Identifier",
-                                                        "name": "print"
-                                                      },
+                                                      "kind": "PrintStatement",
                                                       "arguments": [
                                                         {
                                                           "kind": "Identifier",
