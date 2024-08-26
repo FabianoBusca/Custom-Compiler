@@ -1,4 +1,5 @@
 import {parserTest} from "../utils/utils";
+import {Program} from "../../src/data";
 
 describe("Flow control statements", () => {
 
@@ -6,59 +7,59 @@ describe("Flow control statements", () => {
         const source = `if ((5 + foo()) % 2 == 0) {
                                     print("Yes!")
                                 }`;
-        const expected = `{
-                                  "kind": "Program",
-                                  "body": [
+        const expected = {
+                                  kind: "Program",
+                                  body: [
                                     {
-                                      "kind": "IfStatement",
-                                      "condition": {
-                                        "kind": "LogicalExpression",
-                                        "left": {
-                                          "kind": "BinaryExpression",
-                                          "left": {
-                                            "kind": "BinaryExpression",
-                                            "left": {
-                                              "kind": "Number",
-                                              "value": 5
+                                      kind: "IfStatement",
+                                      condition: {
+                                        kind: "LogicalExpression",
+                                        left: {
+                                          kind: "BinaryExpression",
+                                          left: {
+                                            kind: "BinaryExpression",
+                                            left: {
+                                              kind: "Number",
+                                              value: 5
                                             },
-                                            "operator": 1,
-                                            "right": {
-                                              "kind": "FunctionCall",
-                                              "identifier": {
-                                                "kind": "Identifier",
-                                                "name": "foo"
+                                            operator: 1,
+                                            right: {
+                                              kind: "FunctionCall",
+                                              identifier: {
+                                                kind: "Identifier",
+                                                name: "foo"
                                               },
-                                              "arguments": []
+                                              arguments: []
                                             }
                                           },
-                                          "operator": 5,
-                                          "right": {
-                                            "kind": "Number",
-                                            "value": 2
+                                          operator: 5,
+                                          right: {
+                                            kind: "Number",
+                                            value: 2
                                           }
                                         },
-                                        "operator": 15,
-                                        "right": {
-                                          "kind": "Number",
-                                          "value": 0
+                                        operator: 15,
+                                        right: {
+                                          kind: "Number",
+                                          value: 0
                                         }
                                       },
-                                      "body": [
+                                      body: [
                                         {
-                                          "kind": "PrintStatement",
-                                          "arguments": [
+                                          kind: "PrintStatement",
+                                          arguments: [
                                             {
-                                              "kind": "String",
-                                              "value": "Yes!"
+                                              kind: "String",
+                                              value: "Yes!"
                                             }
                                           ]
                                         }
                                       ],
-                                      "elseBody": null
+                                      elseBody: null
                                     }
                                   ]
-                                }`;
-        parserTest(source, JSON.parse(expected));
+                                } as Program;
+        parserTest(source, expected);
     });
 
     test("If statement - 2", () => {
@@ -67,94 +68,94 @@ describe("Flow control statements", () => {
                                 } else {
                                     b = !b
                                 }`;
-        const expected = `{
-                                  "kind": "Program",
-                                  "body": [
+        const expected = {
+                                  kind: "Program",
+                                  body: [
                                     {
-                                      "kind": "IfStatement",
-                                      "condition": {
-                                        "kind": "LogicalExpression",
-                                        "left": {
-                                          "kind": "ArrayElement",
-                                          "array": {
-                                            "kind": "Identifier",
-                                            "name": "a"
+                                      kind: "IfStatement",
+                                      condition: {
+                                        kind: "LogicalExpression",
+                                        left: {
+                                          kind: "ArrayElement",
+                                          array: {
+                                            kind: "Identifier",
+                                            name: "a"
                                           },
-                                          "indices": [
+                                          indexes: [
                                             {
-                                              "kind": "Number",
-                                              "value": 0
+                                              kind: "Number",
+                                              value: 0
                                             },
                                             {
-                                              "kind": "Number",
-                                              "value": 0
+                                              kind: "Number",
+                                              value: 0
                                             },
                                             {
-                                              "kind": "Number",
-                                              "value": 1
+                                              kind: "Number",
+                                              value: 1
                                             }
                                           ]
                                         },
-                                        "operator": 16,
-                                        "right": {
-                                          "kind": "UnaryExpression",
-                                          "operator": 14,
-                                          "base": {
-                                            "kind": "ArrayElement",
-                                            "array": {
-                                              "kind": "MemberFunctionCall",
-                                              "member": {
-                                                "kind": "Identifier",
-                                                "name": "l"
+                                        operator: 16,
+                                        right: {
+                                          kind: "UnaryExpression",
+                                          operator: 14,
+                                          base: {
+                                            kind: "ArrayElement",
+                                            array: {
+                                              kind: "MemberFunctionCall",
+                                              member: {
+                                                kind: "Identifier",
+                                                name: "l"
                                               },
-                                              "function": {
-                                                "kind": "FunctionCall",
-                                                "identifier": {
-                                                  "kind": "Identifier",
-                                                  "name": "foobar"
+                                              function: {
+                                                kind: "FunctionCall",
+                                                identifier: {
+                                                  kind: "Identifier",
+                                                  name: "foobar"
                                                 },
-                                                "arguments": []
+                                                arguments: []
                                               }
                                             },
-                                            "indices": [
+                                            indexes: [
                                               {
-                                                "kind": "Number",
-                                                "value": 3
+                                                kind: "Number",
+                                                value: 3
                                               }
                                             ]
                                           }
                                         }
                                       },
-                                      "body": [
+                                      body: [
                                         {
-                                          "kind": "UnaryExpression",
-                                          "operator": 8,
-                                          "base": {
-                                            "kind": "Identifier",
-                                            "name": "a"
+                                          kind: "UnaryExpression",
+                                          operator: 8,
+                                          base: {
+                                            kind: "Identifier",
+                                            name: "a"
                                           }
                                         }
                                       ],
-                                      "elseBody": [
+                                      elseBody: [
                                         {
-                                          "kind": "VariableOperations",
-                                          "operations": [
+                                          kind: "VariableOperations",
+                                          operations: [
                                             {
-                                              "kind": "VariableAssignment",
-                                              "element": {
-                                                "kind": "Identifier",
-                                                "name": "b"
+                                              kind: "VariableAssignment",
+                                              element: {
+                                                kind: "Identifier",
+                                                name: "b"
                                               }
                                             }
                                           ],
-                                          "operator": 21,
-                                          "values": [
+                                          operator: 21,
+                                          values: [
                                             {
-                                              "kind": "UnaryExpression",
-                                              "operator": 14,
-                                              "base": {
-                                                "kind": "Identifier",
-                                                "name": "b"
+                                              kind: "UnaryExpression",
+                                              operator: 14,
+                                              base: {
+                                                kind: "Identifier",
+                                                name: "b"
                                               }
                                             }
                                           ]
@@ -162,48 +163,48 @@ describe("Flow control statements", () => {
                                       ]
                                     }
                                   ]
-                                }`;
-        parserTest(source, JSON.parse(expected));
+                                } as Program;
+        parserTest(source, expected);
     });
 
     test("For statement - 1", () => {
         const source = `for (i, x.length) {
                                     print(x[i])
                                 }`;
-        const expected = `{
-                                  "kind": "Program",
-                                  "body": [
+        const expected = {
+                                  kind: "Program",
+                                  body: [
                                     {
-                                      "kind": "ForStatement",
-                                      "iterator": {
-                                        "kind": "Identifier",
-                                        "name": "i"
+                                      kind: "ForStatement",
+                                      iterator: {
+                                        kind: "Identifier",
+                                        name: "i"
                                       },
-                                      "limit": {
-                                        "kind": "MemberAttribute",
-                                        "member": {
-                                          "kind": "Identifier",
-                                          "name": "x"
+                                      limit: {
+                                        kind: "MemberAttribute",
+                                        member: {
+                                          kind: "Identifier",
+                                          name: "x"
                                         },
-                                        "attribute": {
-                                          "kind": "Identifier",
-                                          "name": "length"
+                                        attribute: {
+                                          kind: "Identifier",
+                                          name: "length"
                                         }
                                       },
-                                      "body": [
+                                      body: [
                                         {
-                                          "kind": "PrintStatement",
-                                          "arguments": [
+                                          kind: "PrintStatement",
+                                          arguments: [
                                             {
-                                              "kind": "ArrayElement",
-                                              "array": {
-                                                "kind": "Identifier",
-                                                "name": "x"
+                                              kind: "ArrayElement",
+                                              array: {
+                                                kind: "Identifier",
+                                                name: "x"
                                               },
-                                              "indices": [
+                                              indexes: [
                                                 {
-                                                  "kind": "Identifier",
-                                                  "name": "i"
+                                                  kind: "Identifier",
+                                                  name: "i"
                                                 }
                                               ]
                                             }
@@ -212,71 +213,71 @@ describe("Flow control statements", () => {
                                       ]
                                     }
                                   ]
-                                }`;
-        parserTest(source, JSON.parse(expected));
+                                } as Program;
+        parserTest(source, expected);
     });
 
     test("For statement - 2", () => {
         const source = `for (i, x) {
                                     print(i)
                                 }`;
-        const expected = `{
-                                  "kind": "Program",
-                                  "body": [
+        const expected = {
+                                  kind: "Program",
+                                  body: [
                                     {
-                                      "kind": "ForStatement",
-                                      "iterator": {
-                                        "kind": "Identifier",
-                                        "name": "i"
+                                      kind: "ForStatement",
+                                      iterator: {
+                                        kind: "Identifier",
+                                        name: "i"
                                       },
-                                      "limit": {
-                                        "kind": "Identifier",
-                                        "name": "x"
+                                      limit: {
+                                        kind: "Identifier",
+                                        name: "x"
                                       },
-                                      "body": [
+                                      body: [
                                         {
-                                          "kind": "PrintStatement",
-                                          "arguments": [
+                                          kind: "PrintStatement",
+                                          arguments: [
                                             {
-                                              "kind": "Identifier",
-                                              "name": "i"
+                                              kind: "Identifier",
+                                              name: "i"
                                             }
                                           ]
                                         }
                                       ]
                                     }
                                   ]
-                                }`;
-        parserTest(source, JSON.parse(expected));
+                                } as Program;
+        parserTest(source, expected);
     });
 
     test("While statement - 1", () => {
         const source = `while (a) {
                                     b()
                                 }`;
-        const expected = `{
-                                  "kind": "Program",
-                                  "body": [
+        const expected = {
+                                  kind: "Program",
+                                  body: [
                                     {
-                                      "kind": "WhileStatement",
-                                      "condition": {
-                                        "kind": "Identifier",
-                                        "name": "a"
+                                      kind: "WhileStatement",
+                                      condition: {
+                                        kind: "Identifier",
+                                        name: "a"
                                       },
-                                      "body": [
+                                      body: [
                                         {
-                                          "kind": "FunctionCall",
-                                          "identifier": {
-                                            "kind": "Identifier",
-                                            "name": "b"
+                                          kind: "FunctionCall",
+                                          identifier: {
+                                            kind: "Identifier",
+                                            name: "b"
                                           },
-                                          "arguments": []
+                                          arguments: []
                                         }
                                       ]
                                     }
                                   ]
-                                }`;
-        parserTest(source, JSON.parse(expected));
+                                } as Program;
+        parserTest(source, expected);
     });
 
     test("Switch statement - 1", () => {
@@ -295,145 +296,145 @@ describe("Flow control statements", () => {
                                     print(x)
                                 }`
 
-       const expected = `{
-                                  "kind": "Program",
-                                  "body": [
+       const expected = {
+                                  kind: "Program",
+                                  body: [
                                     {
-                                      "kind": "SwitchStatement",
-                                      "expression": {
-                                        "kind": "BinaryExpression",
-                                        "left": {
-                                          "kind": "FunctionCall",
-                                          "identifier": {
-                                            "kind": "Identifier",
-                                            "name": "foo"
+                                      kind: "SwitchStatement",
+                                      expression: {
+                                        kind: "BinaryExpression",
+                                        left: {
+                                          kind: "FunctionCall",
+                                          identifier: {
+                                            kind: "Identifier",
+                                            name: "foo"
                                           },
-                                          "arguments": []
+                                          arguments: []
                                         },
-                                        "operator": 1,
-                                        "right": {
-                                          "kind": "Number",
-                                          "value": 1
+                                        operator: 1,
+                                        right: {
+                                          kind: "Number",
+                                          value: 1
                                         }
                                       },
-                                      "cases": [
+                                      cases: [
                                         {
-                                          "kind": "CaseStatement",
-                                          "values": [
+                                          kind: "CaseStatement",
+                                          values: [
                                             {
-                                              "kind": "BinaryExpression",
-                                              "left": {
-                                                "kind": "Number",
-                                                "value": 1
+                                              kind: "BinaryExpression",
+                                              left: {
+                                                kind: "Number",
+                                                value: 1
                                               },
-                                              "operator": 1,
-                                              "right": {
-                                                "kind": "Number",
-                                                "value": 1
+                                              operator: 1,
+                                              right: {
+                                                kind: "Number",
+                                                value: 1
                                               }
                                             }
                                           ],
-                                          "body": [
+                                          body: [
                                             {
-                                              "kind": "PrintStatement",
-                                              "arguments": [
+                                              kind: "PrintStatement",
+                                              arguments: [
                                                 {
-                                                  "kind": "String",
-                                                  "value": "1"
+                                                  kind: "String",
+                                                  value: "1"
                                                 }
                                               ]
                                             }
                                           ]
                                         },
                                         {
-                                          "kind": "CaseStatement",
-                                          "values": [
+                                          kind: "CaseStatement",
+                                          values: [
                                             {
-                                              "kind": "FunctionCall",
-                                              "identifier": {
-                                                "kind": "Identifier",
-                                                "name": "a"
+                                              kind: "FunctionCall",
+                                              identifier: {
+                                                kind: "Identifier",
+                                                name: "a"
                                               },
-                                              "arguments": []
+                                              arguments: []
                                             }
                                           ],
-                                          "body": [
+                                          body: [
                                             {
-                                              "kind": "PrintStatement",                                              
-                                              "arguments": [
+                                              kind: "PrintStatement",                                              
+                                              arguments: [
                                                 {
-                                                  "kind": "String",
-                                                  "value": "a"
+                                                  kind: "String",
+                                                  value: "a"
                                                 }
                                               ]
                                             }
                                           ]
                                         },
                                         {
-                                          "kind": "CaseStatement",
-                                          "values": [
+                                          kind: "CaseStatement",
+                                          values: [
                                             {
-                                              "kind": "ArrayElement",
-                                              "array": {
-                                                "kind": "Identifier",
-                                                "name": "b"
+                                              kind: "ArrayElement",
+                                              array: {
+                                                kind: "Identifier",
+                                                name: "b"
                                               },
-                                              "indices": [
+                                              indexes: [
                                                 {
-                                                  "kind": "Number",
-                                                  "value": 0
+                                                  kind: "Number",
+                                                  value: 0
                                                 }
                                               ]
                                             }
                                           ],
-                                          "body": [
+                                          body: [
                                             {
-                                              "kind": "PrintStatement",
-                                              "arguments": [
+                                              kind: "PrintStatement",
+                                              arguments: [
                                                 {
-                                                  "kind": "String",
-                                                  "value": "b"
+                                                  kind: "String",
+                                                  value: "b"
                                                 }
                                               ]
                                             }
                                           ]
                                         }
                                       ],
-                                      "default": [
+                                      default: [
                                         {
-                                          "kind": "VariableOperations",
-                                          "operations": [
+                                          kind: "VariableOperations",
+                                          operations: [
                                             {
-                                              "kind": "VariableDeclaration",
-                                              "type": "num[]",
-                                              "identifier": {
-                                                "kind": "Identifier",
-                                                "name": "x"
+                                              kind: "VariableDeclaration",
+                                              type: "num[]",
+                                              identifier: {
+                                                kind: "Identifier",
+                                                name: "x"
                                               }
                                             }
                                           ],
-                                          "operator": 21,
-                                          "values": [
+                                          operator: 21,
+                                          values: [
                                             {
-                                              "kind": "Number",
-                                              "value": 4
+                                              kind: "Number",
+                                              value: 4
                                             }
                                           ]
                                         },
                                         {
-                                          "kind": "PrintStatement",                                          
-                                          "arguments": [
+                                          kind: "PrintStatement",                                          
+                                          arguments: [
                                             {
-                                              "kind": "Identifier",
-                                              "name": "x"
+                                              kind: "Identifier",
+                                              name: "x"
                                             }
                                           ]
                                         }
                                       ]
                                     }
                                   ]
-                                }`;
-       parserTest(source, JSON.parse(expected));
+                                } as Program;
+       parserTest(source, expected);
     });
 
     test("Complex flow control statement", () => {
@@ -450,191 +451,191 @@ describe("Flow control statements", () => {
                                         }
                                     }
                                 }`;
-        const expected = `{
-                                  "kind": "Program",
-                                  "body": [
+        const expected = {
+                                  kind: "Program",
+                                  body: [
                                     {
-                                      "kind": "WhileStatement",
-                                      "condition": {
-                                        "kind": "LogicalExpression",
-                                        "left": {
-                                          "kind": "UnaryExpression",
-                                          "operator": 2,
-                                          "base": {
-                                            "kind": "MemberFunctionCall",
-                                            "member": {
-                                              "kind": "MemberAttribute",
-                                              "member": {
-                                                "kind": "FunctionCall",
-                                                "identifier": {
-                                                  "kind": "Identifier",
-                                                  "name": "a"
+                                      kind: "WhileStatement",
+                                      condition: {
+                                        kind: "LogicalExpression",
+                                        left: {
+                                          kind: "UnaryExpression",
+                                          operator: 2,
+                                          base: {
+                                            kind: "MemberFunctionCall",
+                                            member: {
+                                              kind: "MemberAttribute",
+                                              member: {
+                                                kind: "FunctionCall",
+                                                identifier: {
+                                                  kind: "Identifier",
+                                                  name: "a"
                                                 },
-                                                "arguments": []
+                                                arguments: []
                                               },
-                                              "attribute": {
-                                                "kind": "Identifier",
-                                                "name": "b"
+                                              attribute: {
+                                                kind: "Identifier",
+                                                name: "b"
                                               }
                                             },
-                                            "function": {
-                                              "kind": "FunctionCall",
-                                              "identifier": {
-                                                "kind": "Identifier",
-                                                "name": "length"
+                                            function: {
+                                              kind: "FunctionCall",
+                                              identifier: {
+                                                kind: "Identifier",
+                                                name: "length"
                                               },
-                                              "arguments": []
+                                              arguments: []
                                             }
                                           }
                                         },
-                                        "operator": 15,
-                                        "right": {
-                                          "kind": "Number",
-                                          "value": 1
+                                        operator: 15,
+                                        right: {
+                                          kind: "Number",
+                                          value: 1
                                         }
                                       },
-                                      "body": [
+                                      body: [
                                         {
-                                          "kind": "IfStatement",
-                                          "condition": {
-                                            "kind": "LogicalExpression",
-                                            "left": {
-                                              "kind": "ArrayElement",
-                                              "array": {
-                                                "kind": "MemberAttribute",
-                                                "member": {
-                                                  "kind": "FunctionCall",
-                                                  "identifier": {
-                                                    "kind": "Identifier",
-                                                    "name": "a"
+                                          kind: "IfStatement",
+                                          condition: {
+                                            kind: "LogicalExpression",
+                                            left: {
+                                              kind: "ArrayElement",
+                                              array: {
+                                                kind: "MemberAttribute",
+                                                member: {
+                                                  kind: "FunctionCall",
+                                                  identifier: {
+                                                    kind: "Identifier",
+                                                    name: "a"
                                                   },
-                                                  "arguments": []
+                                                  arguments: []
                                                 },
-                                                "attribute": {
-                                                  "kind": "Identifier",
-                                                  "name": "b"
+                                                attribute: {
+                                                  kind: "Identifier",
+                                                  name: "b"
                                                 }
                                               },
-                                              "indices": [
+                                              indexes: [
                                                 {
-                                                  "kind": "Number",
-                                                  "value": 0
+                                                  kind: "Number",
+                                                  value: 0
                                                 }
                                               ]
                                             },
-                                            "operator": 15,
-                                            "right": {
-                                              "kind": "Number",
-                                              "value": 1
+                                            operator: 15,
+                                            right: {
+                                              kind: "Number",
+                                              value: 1
                                             }
                                           },
-                                          "body": [
+                                          body: [
                                             {
-                                              "kind": "ForStatement",
-                                              "iterator": {
-                                                "kind": "Identifier",
-                                                "name": "i"
+                                              kind: "ForStatement",
+                                              iterator: {
+                                                kind: "Identifier",
+                                                name: "i"
                                               },
-                                              "limit": {
-                                                "kind": "BinaryExpression",
-                                                "left": {
-                                                  "kind": "Number",
-                                                  "value": 5
+                                              limit: {
+                                                kind: "BinaryExpression",
+                                                left: {
+                                                  kind: "Number",
+                                                  value: 5
                                                 },
-                                                "operator": 1,
-                                                "right": {
-                                                  "kind": "MemberFunctionCall",
-                                                  "member": {
-                                                    "kind": "MemberAttribute",
-                                                    "member": {
-                                                      "kind": "FunctionCall",
-                                                      "identifier": {
-                                                        "kind": "Identifier",
-                                                        "name": "a"
+                                                operator: 1,
+                                                right: {
+                                                  kind: "MemberFunctionCall",
+                                                  member: {
+                                                    kind: "MemberAttribute",
+                                                    member: {
+                                                      kind: "FunctionCall",
+                                                      identifier: {
+                                                        kind: "Identifier",
+                                                        name: "a"
                                                       },
-                                                      "arguments": []
+                                                      arguments: []
                                                     },
-                                                    "attribute": {
-                                                      "kind": "Identifier",
-                                                      "name": "b"
+                                                    attribute: {
+                                                      kind: "Identifier",
+                                                      name: "b"
                                                     }
                                                   },
-                                                  "function": {
-                                                    "kind": "FunctionCall",
-                                                    "identifier": {
-                                                      "kind": "Identifier",
-                                                      "name": "length"
+                                                  function: {
+                                                    kind: "FunctionCall",
+                                                    identifier: {
+                                                      kind: "Identifier",
+                                                      name: "length"
                                                     },
-                                                    "arguments": []
+                                                    arguments: []
                                                   }
                                                 }
                                               },
-                                              "body": [
+                                              body: [
                                                 {
-                                                  "kind": "PrintStatement",
-                                                  "arguments": [
+                                                  kind: "PrintStatement",
+                                                  arguments: [
                                                     {
-                                                      "kind": "Identifier",
-                                                      "name": "i"
+                                                      kind: "Identifier",
+                                                      name: "i"
                                                     }
                                                   ]
                                                 }
                                               ]
                                             }
                                           ],
-                                          "elseBody": [
+                                          elseBody: [
                                             {
-                                              "kind": "SwitchStatement",
-                                              "expression": {
-                                                "kind": "LogicalExpression",
-                                                "left": {
-                                                  "kind": "BinaryExpression",
-                                                  "left": {
-                                                    "kind": "Identifier",
-                                                    "name": "x"
+                                              kind: "SwitchStatement",
+                                              expression: {
+                                                kind: "LogicalExpression",
+                                                left: {
+                                                  kind: "BinaryExpression",
+                                                  left: {
+                                                    kind: "Identifier",
+                                                    name: "x"
                                                   },
-                                                  "operator": 5,
-                                                  "right": {
-                                                    "kind": "Number",
-                                                    "value": 2
+                                                  operator: 5,
+                                                  right: {
+                                                    kind: "Number",
+                                                    value: 2
                                                   }
                                                 },
-                                                "operator": 15,
-                                                "right": {
-                                                  "kind": "Number",
-                                                  "value": 0
+                                                operator: 15,
+                                                right: {
+                                                  kind: "Number",
+                                                  value: 0
                                                 }
                                               },
-                                              "cases": [],
-                                              "default": [
+                                              cases: [],
+                                              default: [
                                                 {
-                                                  "kind": "ForStatement",
-                                                  "iterator": {
-                                                    "kind": "Identifier",
-                                                    "name": "i"
+                                                  kind: "ForStatement",
+                                                  iterator: {
+                                                    kind: "Identifier",
+                                                    name: "i"
                                                   },
-                                                  "limit": {
-                                                    "kind": "MemberAttribute",
-                                                    "member": {
-                                                      "kind": "FunctionCall",
-                                                      "identifier": {
-                                                        "kind": "Identifier",
-                                                        "name": "a"
+                                                  limit: {
+                                                    kind: "MemberAttribute",
+                                                    member: {
+                                                      kind: "FunctionCall",
+                                                      identifier: {
+                                                        kind: "Identifier",
+                                                        name: "a"
                                                       },
-                                                      "arguments": []
+                                                      arguments: []
                                                     },
-                                                    "attribute": {
-                                                      "kind": "Identifier",
-                                                      "name": "b"
+                                                    attribute: {
+                                                      kind: "Identifier",
+                                                      name: "b"
                                                     }
                                                   },
-                                                  "body": [
+                                                  body: [
                                                     {
-                                                      "kind": "PrintStatement",
-                                                      "arguments": [
+                                                      kind: "PrintStatement",
+                                                      arguments: [
                                                         {
-                                                          "kind": "Identifier",
-                                                          "name": "i"
+                                                          kind: "Identifier",
+                                                          name: "i"
                                                         }
                                                       ]
                                                     }
@@ -647,8 +648,7 @@ describe("Flow control statements", () => {
                                       ]
                                     }
                                   ]
-                                }`;
-
-        parserTest(source, JSON.parse(expected));
+                                } as Program;
+        parserTest(source, expected);
     });
 });

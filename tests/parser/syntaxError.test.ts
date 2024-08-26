@@ -1,19 +1,15 @@
-import {lexerTest} from "../utils/utils";
+import {lexerTest, parserTest} from "../utils/utils";
 import {DayErr} from "../../src/utils/dayErr";
+import {Program} from "../../src/data";
 
 describe("Syntax errors", () => {
 
     test("Unexpected character", () => {
-        const source = `num x = 10 @ 5`;
-        const expected = [
-            { tag: 31, value: 'num', line: 1, column: 4 },
-            { tag: 34, value: 'x', line: 1, column: 6 },
-            { tag: 21, value: '=', line: 1, column: 8 },
-            { tag: 35, value: '10', line: 1, column: 11 }
-        ];
-        const errors: DayErr[] = [new DayErr("Unexpected character: @", "Syntax Error", 1, 11, "num x = 10 @ 5")];
+        const source = `num[][ x`;
+        const expected = { kind: "Program", body: [] } as Program;
+        const errors: DayErr[] = [new DayErr("Expected ']'", "Lexical error", 1, 6, "num[][ x")];
 
-        lexerTest(source, expected, errors);
+        parserTest(source, expected, errors);
     });
 
     test("Unterminated F-string", () => {
@@ -30,7 +26,7 @@ describe("Syntax errors", () => {
             { tag: 35, value: '9', line: 1, column: 30 },
             { tag: 27, value: '}', line: 1, column: 31 }
         ];
-        const errors: DayErr[] = [new DayErr("Unterminated f-string", "Syntax Error", 1, 30, "str s = 'Hello, World! {9 + 9}")];
+        const errors: DayErr[] = [new DayErr("Unterminated f-string", "Lexical error", 1, 30, "str s = 'Hello, World! {9 + 9}")];
 
         lexerTest(source, expected, errors);
     });
@@ -42,7 +38,7 @@ describe("Syntax errors", () => {
             { tag: 34, value: 's', line: 1, column: 6 },
             { tag: 21, value: '=', line: 1, column: 8 },
         ];
-        const errors: DayErr[] = [new DayErr("Unterminated string", "Syntax Error", 1, 22, 'str s = "Hello, World!')];
+        const errors: DayErr[] = [new DayErr("Unterminated string", "Lexical error", 1, 22, 'str s = "Hello, World!')];
 
         lexerTest(source, expected, errors);
     });
@@ -50,7 +46,7 @@ describe("Syntax errors", () => {
     test("Unterminated multi-line comment", () => {
         const source = `<< num x`;
         const expected = [];
-        const errors: DayErr[] = [new DayErr("Unterminated multi-line comment", "Syntax Error", 1, 8, '<< num x')];
+        const errors: DayErr[] = [new DayErr("Unterminated multi-line comment", "Lexical error", 1, 8, '<< num x')];
 
         lexerTest(source, expected, errors);
     });

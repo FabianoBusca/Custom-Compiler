@@ -1,43 +1,95 @@
-import {PrintStatement, ReadStatement, ReturnStatement, Tag, Token} from "../data";
+import {DayErr} from "../utils/dayErr";
 import {
-    Expression,
-    Identifier,
-    Statement,
-    Program,
-    VariableDeclaration,
+    ArrayElement, ArrayNode, BinaryExpression, BooleanNode, ClassDeclaration,
+    Expression, ForStatement, FString, FunctionCall, FunctionDeclaration,
+    Identifier, IfStatement, LogicalExpression, MemberAttribute, MemberFunctionCall, NumberNode, PrintStatement,
+    Program, ReadStatement, ReturnStatement,
+    Statement, StringNode, SwitchStatement,
+    Tag,
+    Token, UnaryExpression,
     VariableAssignment,
-    VariableOperations,
-    FunctionDeclaration,
-    MemberFunctionCall,
-    MemberAttribute,
-    ArrayElement,
-    UnaryExpression,
-    BinaryExpression,
-    LogicalExpression,
-    NumberNode,
-    StringNode,
-    BooleanNode,
-    FString,
-    ArrayNode,
-    IfStatement,
-    WhileStatement,
-    ForStatement,
-    ClassDeclaration,
-    FunctionCall,
-    SwitchStatement
+    VariableDeclaration,
+    VariableOperations, WhileStatement
 } from "../data";
-import {DayError} from "../utils/error";
 
 export class Parser {
     // TODO: null
     private index: number = 0;
-    constructor(private readonly tokens: Token[], private readonly source: string[]) {}
-    parse(): Program {
-        const program: Program = { kind: "Program", body: [] };
-        while (!this.isEOF()) {
-            program.body.push(this.parseStatement());
+
+    private readonly errors: DayErr[] = [];
+    private readonly ast: Program = { kind: "Program", body: [] };
+
+    private static TAGS: Map<Tag, string> = new Map([
+        [Tag.EOF, "\'end of file\'"],
+        [Tag.PLUS, "\'+\'"],
+        [Tag.MINUS, "\'-\'"],
+        [Tag.TIMES, "\'*\'"],
+        [Tag.DIV, "\'/\'"],
+        [Tag.MOD, "\'%\'"],
+        [Tag.POW, "\'**\'"],
+        [Tag.INT_DIV, "\'//\'"],
+        [Tag.INC, "\'++\'"],
+        [Tag.DEC, "\'--\'"],
+        [Tag.SELF_INC, "\'+=\'"],
+        [Tag.SELF_DEC, "\'-=\'"],
+        [Tag.AND, "\'&\'"],
+        [Tag.OR, "\'|\'"],
+        [Tag.NOT, "\'!\'"],
+        [Tag.EQ, "\'==\'"],
+        [Tag.NE, "\'!=\'"],
+        [Tag.GT, "\'>\'"],
+        [Tag.LT, "\'<\'"],
+        [Tag.GE, "\'>=\'"],
+        [Tag.LE, "\'<=\'"],
+        [Tag.ASSIGN, "\'=\'"],
+        [Tag.LRP, "\'(\'"],
+        [Tag.RRP, "\')\'"],
+        [Tag.LSP, "\'[\'"],
+        [Tag.RSP, "\']\'"],
+        [Tag.LCP, "\'{\'"],
+        [Tag.RCP, "\'}\'"],
+        [Tag.COMMA, "\',\'"],
+        [Tag.DOT, "\'.\'"],
+        [Tag.QUOTE, "\"'\""],
+        [Tag.NUM, "\'num\'"],
+        [Tag.STR, "\'str\'"],
+        [Tag.BOOL, "\'bool\'"],
+        [Tag.ID, "\'identifier\'"],
+        [Tag.NUMBER, "\'number\'"],
+        [Tag.TEXT, "\'text\'"],
+        [Tag.IF, "\'if\'"],
+        [Tag.ELSE, "\'else\'"],
+        [Tag.WHILE, "\'while\'"],
+        [Tag.FOR, "\'for\'"],
+        [Tag.RETURN, "\'return\'"],
+        [Tag.SWITCH, "\'switch\'"],
+        [Tag.CASE, "\'case\'"],
+        [Tag.BREAK, "\'break\'"],
+        [Tag.DEFAULT, "\'default\'"],
+        [Tag.CLASS, "\'class\'"],
+        [Tag.THIS, "\'this\'"],
+        [Tag.TRUE, "\'true\'"],
+        [Tag.FALSE, "\'false\'"],
+        [Tag.PRINT, "\'print\'"],
+        [Tag.READ, "\'read\'"],
+        [Tag.NULL, "\'null\'"],
+        [Tag.UNDERSCORE, "\'_\'"],
+    ]);
+    constructor(private readonly tokens: Token[], private readonly source: string) {}
+    parse(): boolean {
+        try {
+            while (!this.isEOF()) {
+                this.ast.body.push(this.parseStatement());
+            }
+        } catch (error) {
+            if (error instanceof DayErr) {
+                return false;
+            } else {
+                throw error;
+            }
         }
-        return program;
+
+        return true;
     }
     private isEOF(): boolean {
         return this.peek() === Tag.EOF;
@@ -55,16 +107,20 @@ export class Parser {
     }
     private expect(expected: Tag, message?: string): Token {
         if (this.isEOF() || this.peek() !== expected) {
-            this.error(message ? message : `Expected ${Tag[expected]}`);
+            this.throwError(message ? message : `Expected ${Parser.TAGS.get(expected)}`);
         }
         return this.advance();
     }
     private check(...tags: Tag[]): boolean {
         return !this.isEOF() && tags.includes(this.peek());
     }
-    private error(message: string): never {
-        const token = this.tokens[this.index];
-        throw DayError.syntaxError(message, token.line, token.column, this.source[token.line - 1]);
+    private throwError(message: string): never {
+        const token = this.tokens[this.index - 2];
+        const error = new DayErr(message, "Syntax Error", token.line, token.column, this.source.split('\n')[token.line - 1]);
+        this.errors.push(error);
+        this.advance();
+        // TODO shouldn't be thrown here
+        throw error;
     }
     private parseStatement(): Statement {
         if (this.check(Tag.NUM, Tag.STR, Tag.BOOL, Tag.UNDERSCORE, Tag.THIS, Tag.ID)) {
@@ -89,7 +145,7 @@ export class Parser {
             return this.parseSwitchStatement();
         }
 
-        this.error("Unexpected token");
+        this.throwError("Unexpected token");
     }
     private parseDeclaration(elements: Identifier[]): Statement {
         if (this.check(Tag.STR, Tag.NUM, Tag.BOOL) || (this.check(Tag.ID) && this.peek(1) === Tag.LSP && this.peek(2) === Tag.RSP)) {
@@ -112,7 +168,7 @@ export class Parser {
             return this.parseAssignOperator(elements);
         }
 
-        return this.error("Unexpected token");
+        return this.throwError("Unexpected token");
     }
     private parseTypedDeclaration(elements: Identifier[]): Statement {
         const type = this.parseType();
@@ -136,7 +192,7 @@ export class Parser {
             return this.parseFunctionDeclaration(returnTypes);
         }
 
-        this.error("Unexpected token");
+        this.throwError("Unexpected token");
     }
     private parseType(): string {
         let type = this.advance().value;
@@ -149,7 +205,7 @@ export class Parser {
     private parseIdentifierDeclaration(elements: Identifier[]): Statement {
         const op: Expression = this.parseExpression()//this.parsePostfixExpression({ kind: "Identifier", name: this.advance().value } as Identifier);
         if (op.kind === "MemberFunctionCall" || op.kind === "UnaryExpression" || op.kind === "FunctionCall") {
-            if (elements.length !== 0) this.error("Cannot call a function inside a declaration");
+            if (elements.length !== 0) this.throwError("Cannot call a function inside a declaration");
             return op;
         }
 
@@ -177,10 +233,10 @@ export class Parser {
                 return this.parseDeclaration(elements);
             }
 
-            this.error("Unexpected token");
+            this.throwError("Unexpected token");
         }
 
-        this.error("Unexpected expression");
+        this.throwError("Unexpected expression");
     }
     private createVariableAssignments(identifiers: Identifier[]): VariableAssignment[] {
         const assignments: VariableAssignment[] = [];
@@ -211,7 +267,7 @@ export class Parser {
         } else {
             // if it is a declaration it can't have any assignment inside
             if (declarations.operations.some(op => op.kind === "VariableAssignment")) {
-                this.error("Variable declaration cannot have assignments");
+                this.throwError("Variable declaration cannot have assignments");
             }
         }
 
@@ -240,9 +296,9 @@ export class Parser {
                     else if (op.kind === "MemberAttribute" || op.kind === "ArrayElement") {
                         declaration = { kind: "VariableAssignment", element: op } as VariableAssignment;
                     }
-                    else this.error("Unexpected token");
+                    else this.throwError("Unexpected token");
                 }
-            } else this.error("Unexpected token");
+            } else this.throwError("Unexpected token");
             operations.push(declaration);
         }
         return operations
@@ -291,11 +347,11 @@ export class Parser {
         }
 
         if (this.check(Tag.ASSIGN)) {
-            if (elements.length !== 1) this.error("Void function cannot have multiple return types");
+            if (elements.length !== 1) this.throwError("Void function cannot have multiple return types");
             return this.parseFunctionDeclaration(["_"]);
         }
 
-        return this.error("Unexpected token");
+        return this.throwError("Unexpected token");
     }
     private parseAssignOperator(elements: Identifier[]) {
         if (!(this.peek(1) === Tag.ID || this.peek(1) === Tag.UNDERSCORE)) return this.parseVariableDeclaration(this.createVariableAssignments(elements))
@@ -503,7 +559,7 @@ export class Parser {
             expr = this.parseParenthesizeExpression();
         }
         else {
-            this.error("Unexpected token");
+            this.throwError("Unexpected token");
         }
 
         return this.parsePostfixExpression(expr);
@@ -536,7 +592,7 @@ export class Parser {
             } else if (this.check(Tag.TEXT)) {
                 value.push(this.parseStringLiteral());
             } else {
-                this.error("Unexpected token");
+                this.throwError("Unexpected token");
             }
         }
         return { kind: "F-String", value };
@@ -587,7 +643,7 @@ export class Parser {
         };
         this.match(Tag.LRP);
         do {
-            if (!this.check(Tag.ID)) this.error("Expected identifier");
+            if (!this.check(Tag.ID)) this.throwError("Expected identifier");
             statement.arguments.push(this.parsePostfixExpression({ kind: "Identifier", name: this.advance().value } as Identifier));
         } while (this.match(Tag.COMMA));
         this.expect(Tag.RRP);
@@ -694,5 +750,11 @@ export class Parser {
         declaration.body = this.parseBlock();
 
         return declaration;
+    }
+    public getAST(): Program {
+        return this.ast;
+    }
+    public getErrors(): DayErr[] {
+        return this.errors;
     }
 }

@@ -1,6 +1,6 @@
 import {Lexer, Parser, SymbolTableBuilder, TypeChecker} from "../../src/compiler";
 import {DayErr} from "../../src/utils/dayErr";
-import {Token} from "../../src/data";
+import {Program, Token} from "../../src/data";
 
 export function lexerTest(source: string, expected: Token[], errors?: DayErr[]) {
     const lexer = new Lexer(source);
@@ -13,15 +13,29 @@ export function lexerTest(source: string, expected: Token[], errors?: DayErr[]) 
     expect(tokens).toEqual(expected);
 }
 
-export function parserTest(source: string, expected: string) {
+export function parserTest(source: string, expected: Program, errors?: DayErr[]) {
     const lexer = new Lexer(source);
     lexer.tokenize();
     const tokens = lexer.getTokens();
-    const parser = new Parser(tokens, source.split("\n"));
-    const ast = parser.parse();
+    const parser = new Parser(tokens, source);
+    parser.parse();
 
-    expect(ast).toEqual(expected.toString());
+    const parserErrors = parser.getErrors();
+    if (errors) expect(parserErrors).toEqual((errors))
+
+    const ast = parser.getAST();
+    expect(ast).toEqual(expected);
 }
+
+// export function parserTest(source: string, expected: string) {
+//     const lexer = new Lexer(source);
+//     lexer.tokenize();
+//     const tokens = lexer.getTokens();
+//     const parser = new Parser(tokens, source.split("\n"));
+//     const ast = parser.parse();
+//
+//     expect(ast).toEqual(expected.toString());
+// }
 
 export function typeCheckerTest(source: string, expected: string) {
     const lexer = new Lexer(source);

@@ -1,5 +1,4 @@
 import {lexerTest} from "../utils/utils";
-import {Token} from "../../src/data";
 
 describe("Tags", () => {
 

@@ -29,7 +29,7 @@ export enum Tag {
     RCP,        // }
     COMMA,      // ,
     DOT,        // .
-    QUOTE,      // "
+    QUOTE,      // '
     NUM,        // num
     STR,        // str
     BOOL,       // bool

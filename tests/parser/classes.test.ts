@@ -1,4 +1,5 @@
 import {parserTest} from "../utils/utils";
+import {Program} from "../../src/data";
 
 describe("Class Declarations", () => {
     test("Class declaration - 1", () => {
@@ -18,148 +19,148 @@ describe("Class Declarations", () => {
                 }
             }`;
 
-        const expected = `{
-                                  "kind": "Program",
-                                  "body": [
+        const expected = {
+                                  kind: "Program",
+                                  body: [
                                     {
-                                      "kind": "ClassDeclaration",
-                                      "identifier": {
-                                        "kind": "Identifier",
-                                        "name": "Dog"
+                                      kind: "ClassDeclaration",
+                                      identifier: {
+                                        kind: "Identifier",
+                                        name: "Dog"
                                       },
-                                      "body": [
+                                      body: [
                                         {
-                                          "kind": "VariableOperations",
-                                          "operations": [
+                                          kind: "VariableOperations",
+                                          operations: [
                                             {
-                                              "kind": "VariableDeclaration",
-                                              "type": "str",
-                                              "identifier": {
-                                                "kind": "Identifier",
-                                                "name": "name"
+                                              kind: "VariableDeclaration",
+                                              type: "str",
+                                              identifier: {
+                                                kind: "Identifier",
+                                                name: "name"
                                               }
                                             }
                                           ],
-                                          "operator": null,
-                                          "values": []
+                                          operator: null,
+                                          values: []
                                         },
                                         {
-                                          "kind": "VariableOperations",
-                                          "operations": [
+                                          kind: "VariableOperations",
+                                          operations: [
                                             {
-                                              "kind": "VariableDeclaration",
-                                              "type": "num",
-                                              "identifier": {
-                                                "kind": "Identifier",
-                                                "name": "age"
+                                              kind: "VariableDeclaration",
+                                              type: "num",
+                                              identifier: {
+                                                kind: "Identifier",
+                                                name: "age"
                                               }
                                             }
                                           ],
-                                          "operator": null,
-                                          "values": []
+                                          operator: null,
+                                          values: []
                                         },
                                         {
-                                          "kind": "FunctionDeclaration",
-                                          "returnTypes": [
+                                          kind: "FunctionDeclaration",
+                                          returnTypes: [
                                             "Dog"
                                           ],
-                                          "identifier": {
-                                            "kind": "Identifier",
-                                            "name": "_"
+                                          identifier: {
+                                            kind: "Identifier",
+                                            name: "_"
                                           },
-                                          "parameters": [
+                                          parameters: [
                                             {
-                                              "kind": "VariableDeclaration",
-                                              "type": "str",
-                                              "identifier": {
-                                                "kind": "Identifier",
-                                                "name": "name"
+                                              kind: "VariableDeclaration",
+                                              type: "str",
+                                              identifier: {
+                                                kind: "Identifier",
+                                                name: "name"
                                               }
                                             },
                                             {
-                                              "kind": "VariableDeclaration",
-                                              "type": "num",
-                                              "identifier": {
-                                                "kind": "Identifier",
-                                                "name": "age"
+                                              kind: "VariableDeclaration",
+                                              type: "num",
+                                              identifier: {
+                                                kind: "Identifier",
+                                                name: "age"
                                               }
                                             }
                                           ],
-                                          "body": [
+                                          body: [
                                             {
-                                              "kind": "VariableOperations",
-                                              "operations": [
+                                              kind: "VariableOperations",
+                                              operations: [
                                                 {
-                                                  "kind": "VariableAssignment",
-                                                  "element": {
-                                                    "kind": "MemberAttribute",
-                                                    "member": {
-                                                      "kind": "Identifier",
-                                                      "name": "this"
+                                                  kind: "VariableAssignment",
+                                                  element: {
+                                                    kind: "MemberAttribute",
+                                                    member: {
+                                                      kind: "Identifier",
+                                                      name: "this"
                                                     },
-                                                    "attribute": {
-                                                      "kind": "Identifier",
-                                                      "name": "name"
+                                                    attribute: {
+                                                      kind: "Identifier",
+                                                      name: "name"
                                                     }
                                                   }
                                                 }
                                               ],
-                                              "operator": 21,
-                                              "values": [
+                                              operator: 21,
+                                              values: [
                                                 {
-                                                  "kind": "Identifier",
-                                                  "name": "name"
+                                                  kind: "Identifier",
+                                                  name: "name"
                                                 }
                                               ]
                                             },
                                             {
-                                              "kind": "VariableOperations",
-                                              "operations": [
+                                              kind: "VariableOperations",
+                                              operations: [
                                                 {
-                                                  "kind": "VariableAssignment",
-                                                  "element": {
-                                                    "kind": "MemberAttribute",
-                                                    "member": {
-                                                      "kind": "Identifier",
-                                                      "name": "this"
+                                                  kind: "VariableAssignment",
+                                                  element: {
+                                                    kind: "MemberAttribute",
+                                                    member: {
+                                                      kind: "Identifier",
+                                                      name: "this"
                                                     },
-                                                    "attribute": {
-                                                      "kind": "Identifier",
-                                                      "name": "age"
+                                                    attribute: {
+                                                      kind: "Identifier",
+                                                      name: "age"
                                                     }
                                                   }
                                                 }
                                               ],
-                                              "operator": 21,
-                                              "values": [
+                                              operator: 21,
+                                              values: [
                                                 {
-                                                  "kind": "Identifier",
-                                                  "name": "age"
+                                                  kind: "Identifier",
+                                                  name: "age"
                                                 }
                                               ]
                                             }
                                           ]
                                         },
                                         {
-                                          "kind": "FunctionDeclaration",
-                                          "returnTypes": [
+                                          kind: "FunctionDeclaration",
+                                          returnTypes: [
                                             "_"
                                           ],
-                                          "identifier": {
-                                            "kind": "Identifier",
-                                            "name": "bark"
+                                          identifier: {
+                                            kind: "Identifier",
+                                            name: "bark"
                                           },
-                                          "parameters": [],
-                                          "body": [
+                                          parameters: [],
+                                          body: [
                                             {
-                                              "kind": "PrintStatement",
-                                              "arguments": [
+                                              kind: "PrintStatement",
+                                              arguments: [
                                                 {
-                                                  "kind": "F-String",
-                                                  "value": [
+                                                  kind: "F-String",
+                                                  value: [
                                                     {
-                                                      "kind": "String",
-                                                      "value": "Woof"
+                                                      kind: "String",
+                                                      value: "Woof"
                                                     }
                                                   ]
                                                 }
@@ -168,41 +169,41 @@ describe("Class Declarations", () => {
                                           ]
                                         },
                                         {
-                                          "kind": "FunctionDeclaration",
-                                          "returnTypes": [
+                                          kind: "FunctionDeclaration",
+                                          returnTypes: [
                                             "_"
                                           ],
-                                          "identifier": {
-                                            "kind": "Identifier",
-                                            "name": "setOwner"
+                                          identifier: {
+                                            kind: "Identifier",
+                                            name: "setOwner"
                                           },
-                                          "parameters": [
+                                          parameters: [
                                             {
-                                              "kind": "VariableDeclaration",
-                                              "type": "owner",
-                                              "identifier": {
-                                                "kind": "Identifier",
-                                                "name": "owner"
+                                              kind: "VariableDeclaration",
+                                              type: "owner",
+                                              identifier: {
+                                                kind: "Identifier",
+                                                name: "owner"
                                               }
                                             }
                                           ],
-                                          "body": [
+                                          body: [
                                             {
-                                              "kind": "MemberFunctionCall",
-                                              "member": {
-                                                "kind": "Identifier",
-                                                "name": "owner"
+                                              kind: "MemberFunctionCall",
+                                              member: {
+                                                kind: "Identifier",
+                                                name: "owner"
                                               },
-                                              "function": {
-                                                "kind": "FunctionCall",
-                                                "identifier": {
-                                                  "kind": "Identifier",
-                                                  "name": "setDog"
+                                              function: {
+                                                kind: "FunctionCall",
+                                                identifier: {
+                                                  kind: "Identifier",
+                                                  name: "setDog"
                                                 },
-                                                "arguments": [
+                                                arguments: [
                                                   {
-                                                    "kind": "Identifier",
-                                                    "name": "this"
+                                                    kind: "Identifier",
+                                                    name: "this"
                                                   }
                                                 ]
                                               }
@@ -212,8 +213,8 @@ describe("Class Declarations", () => {
                                       ]
                                     }
                                   ]
-                                }`;
+                                } as Program;
 
-        parserTest(source, JSON.parse(expected));
+        parserTest(source, expected);
     });
 });

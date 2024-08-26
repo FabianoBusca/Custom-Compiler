@@ -4,10 +4,12 @@ import {Lexer, Parser, SymbolTableBuilder, TypeChecker} from "./compiler";
 
 const scriptsPath = './tests';
 function compile(source: string, flag: string) {
+    let errors;
     source = source.replace('\n\r', '\n');
+
     const lexer = new Lexer(source);
     lexer.tokenize();
-    const errors = lexer.getErrors();
+    errors = lexer.getErrors();
     if (errors.length > 0) {
         errors.forEach(error => {
             console.error(error.toString());
@@ -22,8 +24,17 @@ function compile(source: string, flag: string) {
         return;
     }
 
-    const parser = new Parser(tokens, source.split('\n'));
-    const ast = parser.parse();
+    const parser = new Parser(tokens, source);
+    parser.parse();
+    errors = parser.getErrors();
+    if (errors.length > 0) {
+        errors.forEach(error => {
+            console.error(error.toString());
+        });
+        return;
+    }
+
+    const ast = parser.getAST();
 
     if (flag === '-P') {
         console.log(JSON.stringify(ast, null, 2));

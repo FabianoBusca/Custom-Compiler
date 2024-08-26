@@ -1,5 +1,5 @@
-import {Tag, Token} from "../data";
 import {DayErr} from "../utils/dayErr";
+import {Tag, Token} from "../data";
 
 export class Lexer {
     private readonly source: string;
@@ -58,7 +58,7 @@ export class Lexer {
                     default:
                         if (this.isDigit(char)) this.lexNumber();
                         else if (this.isAlpha(char)) this.lexIdentifierOrKeyword();
-                        else this.error(`Unexpected character: ${char}`);
+                        else this.throwError(`Unexpected character: ${char}`);
                 }
             }
         } catch (error) {
@@ -134,8 +134,8 @@ export class Lexer {
         return this.isAlpha(char) || this.isDigit(char);
     }
 
-    private error(message: string): void {
-        const error = new DayErr(message, "Syntax Error", this.line,this.column - 1, this.source.split('\n')[this.line - 1]);
+    private throwError(message: string): void {
+        const error = new DayErr(message, "Lexical Error", this.line,this.column - 1, this.source.split('\n')[this.line - 1]);
         this.errors.push(error);
         this.advance();
         // TODO shouldn't be thrown here
@@ -160,7 +160,7 @@ export class Lexer {
         }
 
         if (this.isEOF()) {
-            this.error('Unterminated f-string');
+            this.throwError('Unterminated f-string');
         }
 
         if (value.length > 0) {
@@ -248,7 +248,7 @@ export class Lexer {
         }
 
         if (this.isEOF()) {
-            this.error('Unterminated string');
+            this.throwError('Unterminated string');
         }
 
         // Consume the closing "
@@ -306,7 +306,7 @@ export class Lexer {
         }
 
         if (this.isEOF()) {
-            this.error('Unterminated multi-line comment');
+            this.throwError('Unterminated multi-line comment');
         }
 
         // Consume the closing >>
