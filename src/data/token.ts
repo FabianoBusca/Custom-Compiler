@@ -1,3 +1,5 @@
+import {Location} from "../utils/location";
+
 export enum Tag {
     EOF,        // End of file
     PLUS,       // +
@@ -58,8 +60,6 @@ export enum Tag {
 export interface Token {
     tag: Tag;
     value: string;
-    line: number;
-    start: number;
-    end: number;
-    //column: number;
+    start: Location;
+    end: Location;
 }

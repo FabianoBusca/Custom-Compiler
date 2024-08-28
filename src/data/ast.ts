@@ -1,8 +1,11 @@
 import {Tag} from "./token";
+import {Location} from "../utils/location";
 
 type NodeType = 'Program' | 'IfStatement' | 'WhileStatement' | 'ForStatement' | 'SwitchStatement' | 'CaseStatement' | 'VariableOperations' | 'VariableDeclaration' | 'VariableAssignment' | 'Identifier' | 'FunctionDeclaration' | 'ClassDeclaration' | 'ReturnStatement' | 'PrintStatement' | 'ReadStatement' | 'MemberFunctionCall' | 'MemberAttribute' | 'UnaryExpression' | 'ArrayElement' | 'FunctionCall' | 'LogicalExpression' | 'BinaryExpression' | 'Number' | 'String' | 'Boolean' | 'F-String' | 'Array';
 export interface ASTNode {
     kind: NodeType;
+    start: Location;
+    end: Location;
 }
 export interface Statement extends ASTNode {}
 export interface Program extends ASTNode {

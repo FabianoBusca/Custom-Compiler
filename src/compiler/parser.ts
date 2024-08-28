@@ -1,6 +1,6 @@
 import {DayErr} from "../utils/dayErr";
 import {
-    ArrayElement, ArrayNode, BinaryExpression, BooleanNode, ClassDeclaration,
+    ArrayElement, ArrayNode, ASTNode, BinaryExpression, BooleanNode, ClassDeclaration,
     Expression, ForStatement, FString, FunctionCall, FunctionDeclaration,
     Identifier, IfStatement, LogicalExpression, MemberAttribute, MemberFunctionCall, NumberNode, PrintStatement,
     Program, ReadStatement, ReturnStatement,
@@ -11,13 +11,14 @@ import {
     VariableDeclaration,
     VariableOperations, WhileStatement
 } from "../data";
+import {Location} from "../utils/location";
 
 export class Parser {
     // TODO: null
     private index: number = 0;
 
     private readonly errors: DayErr[] = [];
-    private readonly ast: Program = { kind: "Program", body: [] };
+    private readonly ast: Program = { kind: "Program", body: [], start: { line: 1, column: 1 }, end: { line: 0, column: 0 } };
 
     private static TAGS: Map<Tag, string> = new Map([
         [Tag.EOF, "\'end of file\'"],
@@ -94,11 +95,17 @@ export class Parser {
     private isEOF(): boolean {
         return this.peek() === Tag.EOF;
     }
+    private current(): Token {
+        return this.tokens[this.index];
+    }
+    private previous(): Token {
+        return this.tokens[this.index - 1] || this.tokens[0];
+    }
     private peek(ahead = 0): Tag {
         return this.tokens[this.index + ahead].tag;
     }
     private advance(): Token {
-        return this.tokens[this.index++];
+        return this.tokens[this.index++] || this.tokens[this.tokens.length - 1];
     }
     private match(expected: Tag): boolean {
         if (this.isEOF() || this.peek() !== expected) return false;
@@ -117,11 +124,15 @@ export class Parser {
     private clamp(index: number): number {
         return Math.max(0, Math.min(index, this.tokens.length - 1));
     }
+    // private setLocation(node: ASTNode, start_token: Token, end_token: Token): void {
+    //     node.start = { line: start_token.line, column: start_token.start };
+    //     node.end = { line: end_token.line, column: end_token.end };
+    // }
     private throwError(message: string, token_index?: number): never {
         if (!token_index) token_index = this.index;
         else token_index = this.clamp(token_index);
         const token = this.tokens[token_index];
-        const error = new DayErr(message, "Syntax Error", token.line, token.start, token.end, this.source.split('\n')[token.line - 1]);
+        const error = new DayErr(message, "Syntax Error", token.start.line, token.start.column, token.end.column, this.source.split('\n')[token.start.line - 1]);
         this.errors.push(error);
         this.advance();
         // TODO shouldn't be thrown here
@@ -129,7 +140,7 @@ export class Parser {
     }
     private throwExpectedError(message: string, token_index: number = this.index): never {
         const token = this.tokens[token_index];
-        const error = new DayErr(message, "Syntax Error", token.line, token.end, token.end + 1, this.source.split('\n')[token.line - 1]);
+        const error = new DayErr(message, "Syntax Error", token.start.line, token.start.column, token.end.column + 1, this.source.split('\n')[token.start.line - 1]);
         this.errors.push(error);
         this.advance();
         // TODO shouldn't be thrown here
@@ -240,7 +251,7 @@ export class Parser {
                 return this.parseVariableDeclaration(assignments);
             }
 
-            if (this.check(Tag.COMMA, Tag.ASSIGN)) {
+            if (this.check(Tag.COMMA, Tag.ASSIGN, Tag.SELF_INC, Tag.SELF_DEC)) {
                 if (this.check(Tag.COMMA)) this.advance();
                 elements.push(op as Identifier);
                 return this.parseDeclaration(elements);
@@ -392,28 +403,39 @@ export class Parser {
             if (this.check(Tag.LSP)) {
                 base = this.parseArrayElement(base);
             } else if (this.match(Tag.DOT)) {
+                const token = this.advance()
                 const identifier: Identifier = {
                     kind: "Identifier",
-                    name: this.advance().value,
+                    name: token.value,
+                    start: token.start,
+                    end: token.end
                 };
                 if (this.check(Tag.LRP)) {
+                    const func = this.parseFunctionCall(identifier);
                     base = {
                         kind: "MemberFunctionCall",
                         member: base,
-                        function: this.parseFunctionCall(identifier),
+                        function: func,
+                        start: base.start,
+                        end: func.end
                     } as MemberFunctionCall;
                 } else {
                     base = {
                         kind: "MemberAttribute",
                         member: base,
                         attribute: identifier,
+                        start: base.start,
+                        end: identifier.end
                     } as MemberAttribute;
                 }
             } else if (this.check(Tag.INC, Tag.DEC)) {
+                const token = this.advance();
                 base = {
                     kind: "UnaryExpression",
-                    operator: this.advance().tag,
+                    operator: token.tag,
                     base,
+                    start: base.start,
+                    end: token.end
                 } as UnaryExpression;
                 break;
             } else {
@@ -427,6 +449,8 @@ export class Parser {
             kind: "FunctionCall",
             identifier,
             arguments: [],
+            start: identifier.start,
+            end: { line: 0, column: 0 },
         };
         this.match(Tag.LRP);
         if (!this.match(Tag.RRP)) {
@@ -435,6 +459,7 @@ export class Parser {
             } while (this.match(Tag.COMMA));
             this.expect(Tag.RRP);
         }
+        call.end = this.previous().end;
         return call;
     }
     private parseParameters(): VariableDeclaration[] {
@@ -547,9 +572,11 @@ export class Parser {
     }
     private parseUnaryExpression(): Expression {
         if (this.check(Tag.MINUS, Tag.NOT)) {
+            const start_token = this.current();
             const operator = this.advance().tag;
             const base = this.parseUnaryExpression();
-            return { kind: "UnaryExpression", operator, base } as UnaryExpression;
+
+            return { kind: "UnaryExpression", operator, base/*, start: { line: start_token.line, column: start_token.start }, end: base.end*/ } as UnaryExpression;
         }
         return this.parsePrimaryExpression();
     }
@@ -588,13 +615,16 @@ export class Parser {
         return identifier;
     }
     private parseNumberLiteral(): NumberNode {
-        return { kind: "Number", value: Number(this.advance().value) };
+        const token = this.advance();
+        return { kind: "Number", value: Number(token.value), start: token.start, end: token.end } as NumberNode; // TODO remove as
     }
     private parseStringLiteral(): StringNode {
-        return { kind: "String", value: String(this.advance().value) };
+        const token = this.advance();
+        return { kind: "String", value: String(token.value), start: token.start, end: token.end } as StringNode; // TODO remove as
     }
     private parseBooleanLiteral(): BooleanNode {
-        return { kind: "Boolean", value: this.advance().value === "true" };
+        const token = this.advance();
+        return { kind: "Boolean", value: token.value === "true", start: token.start, end: token.end } as BooleanNode; // TODO remove as
     }
     private parseFString(): FString {
         const value: Expression[] = [];
@@ -626,20 +656,22 @@ export class Parser {
         return expr;
     }
     private parseBuiltInFunctionCall(): Statement {
-        const tag = this.advance().tag;
-        if (tag === Tag.PRINT) {
-            return this.parsePrintStatement();
+        const token = this.advance();
+        if (token.tag === Tag.PRINT) {
+            return this.parsePrintStatement(token.start);
         }
-        if (tag === Tag.READ) {
-            return this.parseReadStatement();
+        if (token.tag === Tag.READ) {
+            return this.parseReadStatement(token.start);
         }
-        return this.parseReturnStatement();
+        return this.parseReturnStatement(token.start);
     }
-    private parsePrintStatement(): PrintStatement {
+    private parsePrintStatement(start: Location): PrintStatement {
         const statement: PrintStatement = {
             kind: "PrintStatement",
-            arguments: []
-        };
+            arguments: [],
+            start,
+            end: { line: 0, column: 0 },
+        } as PrintStatement; // TODO remove as
         this.expect(Tag.LRP);
         if (!this.match(Tag.RRP)) {
             do {
@@ -647,26 +679,31 @@ export class Parser {
             } while (this.match(Tag.COMMA));
             this.expect(Tag.RRP);
         }
+        statement.end = this.previous().end;
         return statement;
     }
-    private parseReadStatement(): ReadStatement {
+    private parseReadStatement(start: Location): ReadStatement {
         const statement: ReadStatement = {
             kind: "ReadStatement",
-            arguments: []
-        };
+            arguments: [],
+            start,
+            end: { line: 0, column: 0 },
+        } as ReadStatement; // TODO remove as
         this.match(Tag.LRP);
         do {
             if (!this.check(Tag.ID)) this.throwError("Expected identifier");
             statement.arguments.push(this.parsePostfixExpression({ kind: "Identifier", name: this.advance().value } as Identifier));
         } while (this.match(Tag.COMMA));
-        this.expect(Tag.RRP);
+        statement.end = this.expect(Tag.RRP).end;
         return statement;
     }
-    private parseReturnStatement(): ReturnStatement {
+    private parseReturnStatement(start: Location): ReturnStatement {
         const statement: ReturnStatement = {
             kind: "ReturnStatement",
-            values: []
-        };
+            values: [],
+            start,
+            end: { line: 0, column: 0 },
+        } as ReturnStatement; // TODO remove as
         this.match(Tag.LRP);
         if (!this.match(Tag.RRP)) {
             do {
@@ -674,6 +711,7 @@ export class Parser {
             } while (this.match(Tag.COMMA));
             this.expect(Tag.RRP);
         }
+        statement.end = this.previous().end;
         return statement
     }
     private parseIfStatement(): IfStatement {

@@ -72,8 +72,8 @@ export class Lexer {
         return true;
     }
 
-    private addToken(tag: Tag, start: number, value: string = '', end: number = this.column): void {
-        this.tokens.push({ tag, value, line: this.line, start, end });
+    private addToken(tag: Tag, start_column: number, value: string = '', end_column: number = this.column): void {
+        this.tokens.push({ tag, value, start: { line: this.line, column: start_column }, end: { line: this.line, column: end_column } });
     }
 
     private advance(): string {
