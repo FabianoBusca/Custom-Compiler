@@ -7,7 +7,19 @@ export function lexerTest(source: string, expected: Token[], errors?: DayErr[]) 
     lexer.tokenize();
 
     const lexerErrors = lexer.getErrors();
-    if (errors) expect(lexerErrors).toEqual((errors))
+    if (errors) {
+        expect(lexerErrors.length).toEqual(errors.length);
+        for (let i = 0; i < errors.length; i++) {
+            expect(lexerErrors[i].message).toEqual(errors[i].message);
+            expect(lexerErrors[i].kind).toEqual(errors[i].kind);
+            expect(lexerErrors[i].line).toEqual(errors[i].line);
+            expect(lexerErrors[i].start).toEqual(errors[i].start);
+            expect(lexerErrors[i].end).toEqual(errors[i].end);
+            expect(lexerErrors[i].sourceLine).toEqual(errors[i].sourceLine);
+        }
+    } else {
+        expect(lexerErrors.length).toEqual(0);
+    }
 
     const tokens = lexer.getTokens();
     expect(tokens).toEqual(expected);
@@ -21,7 +33,19 @@ export function parserTest(source: string, expected: Program, errors?: DayErr[])
     parser.parse();
 
     const parserErrors = parser.getErrors();
-    if (errors) expect(parserErrors).toEqual((errors))
+    if (errors) {
+        expect(parserErrors.length).toEqual(errors.length);
+        for (let i = 0; i < errors.length; i++) {
+            expect(parserErrors[i].message).toEqual(errors[i].message);
+            expect(parserErrors[i].kind).toEqual(errors[i].kind);
+            expect(parserErrors[i].line).toEqual(errors[i].line);
+            expect(parserErrors[i].start).toEqual(errors[i].start);
+            expect(parserErrors[i].end).toEqual(errors[i].end);
+            expect(parserErrors[i].sourceLine).toEqual(errors[i].sourceLine);
+        }
+    } else {
+        expect(parserErrors.length).toEqual(0);
+    }
 
     const ast = parser.getAST();
     expect(ast).toEqual(expected);

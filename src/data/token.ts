@@ -59,5 +59,7 @@ export interface Token {
     tag: Tag;
     value: string;
     line: number;
-    column: number;
+    start: number;
+    end: number;
+    //column: number;
 }

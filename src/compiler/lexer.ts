@@ -33,17 +33,17 @@ export class Lexer {
 
                 const char = this.peek();
                 switch (char) {
-                    case '%': this.addToken(Tag.MOD, this.advance()); break;
-                    case '&': this.addToken(Tag.AND, this.advance()); break;
-                    case '|': this.addToken(Tag.OR, this.advance()); break;
-                    case '(': this.addToken(Tag.LRP, this.advance()); break;
-                    case ')': this.addToken(Tag.RRP, this.advance()); break;
-                    case '[': this.addToken(Tag.LSP, this.advance()); break;
-                    case ']': this.addToken(Tag.RSP, this.advance()); break;
-                    case '{': this.addToken(Tag.LCP, this.advance()); break;
+                    case '%': this.addToken(Tag.MOD, this.column, this.advance()); break;
+                    case '&': this.addToken(Tag.AND, this.column, this.advance()); break;
+                    case '|': this.addToken(Tag.OR, this.column, this.advance()); break;
+                    case '(': this.addToken(Tag.LRP, this.column, this.advance()); break;
+                    case ')': this.addToken(Tag.RRP, this.column, this.advance()); break;
+                    case '[': this.addToken(Tag.LSP, this.column, this.advance()); break;
+                    case ']': this.addToken(Tag.RSP, this.column, this.advance()); break;
+                    case '{': this.addToken(Tag.LCP, this.column, this.advance()); break;
                     case '}': this.lexRCP(); break;
-                    case ',': this.addToken(Tag.COMMA, this.advance()); break;
-                    case '.': this.addToken(Tag.DOT, this.advance()); break;
+                    case ',': this.addToken(Tag.COMMA, this.column, this.advance()); break;
+                    case '.': this.addToken(Tag.DOT, this.column, this.advance()); break;
                     case '+': this.lexPlus(); break;
                     case '-': this.lexMinus(); break;
                     case '*': this.lexStar(); break;
@@ -68,12 +68,12 @@ export class Lexer {
             throw error;
         }
 
-        this.addToken(Tag.EOF);
+        this.addToken(Tag.EOF, this.column, '');
         return true;
     }
 
-    private addToken(tag: Tag, value: string = ''): void {
-        this.tokens.push({ tag, value, line: this.line, column: this.column });
+    private addToken(tag: Tag, start: number, value: string = '', end: number = this.column): void {
+        this.tokens.push({ tag, value, line: this.line, start, end });
     }
 
     private advance(): string {
@@ -111,7 +111,7 @@ export class Lexer {
                     break;
                 case '\n':
                     this.line++;
-                    this.column = 1;
+                    this.column = 0;
                     this.advance();
                     break;
                 default:
@@ -135,7 +135,7 @@ export class Lexer {
     }
 
     private throwError(message: string): void {
-        const error = new DayErr(message, "Lexical Error", this.line,this.column - 1, this.source.split('\n')[this.line - 1]);
+        const error = new DayErr(message, "Lexical Error", this.line,this.column - 1, this.column, this.source.split('\n')[this.line - 1]);
         this.errors.push(error);
         this.advance();
         // TODO shouldn't be thrown here
@@ -143,7 +143,7 @@ export class Lexer {
     }
 
     private lexRCP(): void {
-        this.addToken(Tag.RCP, this.advance());
+        this.addToken(Tag.RCP, this.column, this.advance());
         if (!this.isString) return;
 
         this.lexText();
@@ -151,6 +151,7 @@ export class Lexer {
 
     private lexText(): void {
         let value = '';
+        const column = this.column;
         while (this.peek() !== "'" && this.peek() !== '{' && !this.isEOF()) {
             if (this.peek() === '\n') {
                 this.line++;
@@ -164,82 +165,91 @@ export class Lexer {
         }
 
         if (value.length > 0) {
-            this.addToken(Tag.TEXT, value);
+            this.addToken(Tag.TEXT, column, value);
         }
     }
 
     private lexPlus(): void {
+        const column = this.column;
         this.advance();
         if (this.match('+')) {
-            this.addToken(Tag.INC, '++');
+            this.addToken(Tag.INC, this.column,'++');
         }
         else if (this.match('=')) {
-            this.addToken(Tag.SELF_INC, '+=');
+            this.addToken(Tag.SELF_INC, column,'+=');
         }
-        else this.addToken(Tag.PLUS, '+');
+        else this.addToken(Tag.PLUS, column,'+');
     }
 
     private lexMinus(): void {
+        const column = this.column;
         this.advance();
         if (this.match('-')) {
-            this.addToken(Tag.DEC, '--');
+            this.addToken(Tag.DEC, column,'--');
         }
         else if (this.match('=')) {
-            this.addToken(Tag.SELF_DEC, '-=');
+            this.addToken(Tag.SELF_DEC, column, '-=');
         }
-        else this.addToken(Tag.MINUS, '-');
+        else this.addToken(Tag.MINUS, column, '-');
     }
 
     private lexStar(): void {
+        const column = this.column;
         this.advance();
         if (this.match('*')) {
-            this.addToken(Tag.POW, '**');
+            this.addToken(Tag.POW, column, '**');
         }
-        else this.addToken(Tag.TIMES, '*');
+        else this.addToken(Tag.TIMES, column, '*');
     }
 
     private lexSlash(): void {
+        const column = this.column;
         this.advance();
         if (this.match('/')) {
-            this.addToken(Tag.INT_DIV, '//');
+            this.addToken(Tag.INT_DIV, column, '//');
         }
-        else this.addToken(Tag.DIV, '/');
+        else this.addToken(Tag.DIV, column, '/');
     }
 
     private lexGreater(): void {
+        const column = this.column;
         this.advance();
         if (this.match('=')) {
-            this.addToken(Tag.GE, '>=');
+            this.addToken(Tag.GE, column, '>=');
         }
-        else this.addToken(Tag.GT, '>');
+        else this.addToken(Tag.GT, column, '>');
     }
 
     private lexLess(): void {
+        const column = this.column;
         this.advance();
         if (this.match('=')) {
-            this.addToken(Tag.LE, '<=');
+            this.addToken(Tag.LE, column, '<=');
         }
         else if (this.match('<')) this.ignoreMultiComment();
-        else this.addToken(Tag.LT, '<');
+        else this.addToken(Tag.LT, column, '<');
     }
 
     private lexEqual(): void {
+        const column = this.column;
         this.advance();
         if (this.match('=')) {
-            this.addToken(Tag.EQ, '==');
+            this.addToken(Tag.EQ, column, '==');
         }
-        else this.addToken(Tag.ASSIGN, '=');
+        else this.addToken(Tag.ASSIGN, column, '=');
     }
 
     private lexNot(): void {
+        const column = this.column;
         this.advance();
         if (this.match('=')) {
-            this.addToken(Tag.NE, '!=');
+            this.addToken(Tag.NE, column, '!=');
         }
-        else this.addToken(Tag.NOT, '!');
+        else this.addToken(Tag.NOT, column, '!');
     }
 
     private lexString(): void {
+        const column = this.column;
         this.advance()
         let value = '';
         while (this.peek() !== '"' && !this.isEOF()) {
@@ -254,11 +264,11 @@ export class Lexer {
         // Consume the closing "
         this.advance();
 
-        this.addToken(Tag.TEXT, value);
+        this.addToken(Tag.TEXT, column, value);
     }
 
     private lexFString(): void {
-        this.addToken(Tag.QUOTE, this.advance());
+        this.addToken(Tag.QUOTE, this.column, this.advance());
 
         if (this.isString) {
             this.isString = false;
@@ -268,14 +278,14 @@ export class Lexer {
         this.lexText();
 
         if (this.peek() === '{') {
-            this.addToken(Tag.LCP, '{');
-            this.advance();
+            this.addToken(Tag.LCP, this.column, this.advance());
         }
 
         this.isString = true;
     }
 
     private lexNumber(): void {
+        const column = this.column;
         let value = '';
         while (this.isDigit(this.peek())) value += this.advance();
 
@@ -285,15 +295,16 @@ export class Lexer {
             while (this.isDigit(this.peek())) value += this.advance();
         }
 
-        this.addToken(Tag.NUMBER, value);
+        this.addToken(Tag.NUMBER, column, value);
     }
 
     private lexIdentifierOrKeyword(): void {
+        const column = this.column;
         let value = '';
         while (this.isAlphaNumeric(this.peek())) value += this.advance();
 
         const tag = Lexer.KEYWORDS.get(value) || Tag.ID;
-        this.addToken(tag, value);
+        this.addToken(tag, column, value);
     }
 
     private ignoreMultiComment(): void {

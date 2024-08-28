@@ -107,16 +107,29 @@ export class Parser {
     }
     private expect(expected: Tag, message?: string): Token {
         if (this.isEOF() || this.peek() !== expected) {
-            this.throwError(message ? message : `Expected ${Parser.TAGS.get(expected)}`);
+            this.throwExpectedError(message ? message : `Expected ${Parser.TAGS.get(expected)}`,this.index - 1);
         }
         return this.advance();
     }
     private check(...tags: Tag[]): boolean {
         return !this.isEOF() && tags.includes(this.peek());
     }
-    private throwError(message: string): never {
-        const token = this.tokens[this.index - 2];
-        const error = new DayErr(message, "Syntax Error", token.line, token.column, this.source.split('\n')[token.line - 1]);
+    private clamp(index: number): number {
+        return Math.max(0, Math.min(index, this.tokens.length - 1));
+    }
+    private throwError(message: string, token_index?: number): never {
+        if (!token_index) token_index = this.index;
+        else token_index = this.clamp(token_index);
+        const token = this.tokens[token_index];
+        const error = new DayErr(message, "Syntax Error", token.line, token.start, token.end, this.source.split('\n')[token.line - 1]);
+        this.errors.push(error);
+        this.advance();
+        // TODO shouldn't be thrown here
+        throw error;
+    }
+    private throwExpectedError(message: string, token_index: number = this.index): never {
+        const token = this.tokens[token_index];
+        const error = new DayErr(message, "Syntax Error", token.line, token.end, token.end + 1, this.source.split('\n')[token.line - 1]);
         this.errors.push(error);
         this.advance();
         // TODO shouldn't be thrown here
@@ -145,7 +158,7 @@ export class Parser {
             return this.parseSwitchStatement();
         }
 
-        this.throwError("Unexpected token");
+        this.throwError("Unexpected statement", this.index);
     }
     private parseDeclaration(elements: Identifier[]): Statement {
         if (this.check(Tag.STR, Tag.NUM, Tag.BOOL) || (this.check(Tag.ID) && this.peek(1) === Tag.LSP && this.peek(2) === Tag.RSP)) {
@@ -168,7 +181,7 @@ export class Parser {
             return this.parseAssignOperator(elements);
         }
 
-        return this.throwError("Unexpected token");
+        return this.throwError("Unexpected character", this.index - 1);
     }
     private parseTypedDeclaration(elements: Identifier[]): Statement {
         const type = this.parseType();
@@ -192,7 +205,7 @@ export class Parser {
             return this.parseFunctionDeclaration(returnTypes);
         }
 
-        this.throwError("Unexpected token");
+        this.throwError("Unexpected character", this.index - 1);
     }
     private parseType(): string {
         let type = this.advance().value;
@@ -203,9 +216,9 @@ export class Parser {
         return type;
     }
     private parseIdentifierDeclaration(elements: Identifier[]): Statement {
-        const op: Expression = this.parseExpression()//this.parsePostfixExpression({ kind: "Identifier", name: this.advance().value } as Identifier);
+        const op: Expression = this.parseExpression()
         if (op.kind === "MemberFunctionCall" || op.kind === "UnaryExpression" || op.kind === "FunctionCall") {
-            if (elements.length !== 0) this.throwError("Cannot call a function inside a declaration");
+            if (elements.length !== 0) this.throwError("Cannot call a function inside a declaration", this.index - 3);
             return op;
         }
 
@@ -233,7 +246,7 @@ export class Parser {
                 return this.parseDeclaration(elements);
             }
 
-            this.throwError("Unexpected token");
+            this.throwError("Unexpected identifier", this.index - 2);
         }
 
         this.throwError("Unexpected expression");
@@ -627,7 +640,7 @@ export class Parser {
             kind: "PrintStatement",
             arguments: []
         };
-        this.match(Tag.LRP);
+        this.expect(Tag.LRP);
         if (!this.match(Tag.RRP)) {
             do {
                 statement.arguments.push(this.parseExpression());
