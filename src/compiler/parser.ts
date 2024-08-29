@@ -1,24 +1,45 @@
 import {DayErr} from "../utils/dayErr";
 import {
-    ArrayElement, ArrayNode, ASTNode, BinaryExpression, BooleanNode, ClassDeclaration,
-    Expression, ForStatement, FString, FunctionCall, FunctionDeclaration,
-    Identifier, IfStatement, LogicalExpression, MemberAttribute, MemberFunctionCall, NumberNode, PrintStatement,
-    Program, ReadStatement, ReturnStatement,
-    Statement, StringNode, SwitchStatement,
+    ArrayElement,
+    ArrayNode,
+    BinaryExpression,
+    BooleanNode, CaseStatement,
+    ClassDeclaration,
+    Expression,
+    ForStatement,
+    FString,
+    FunctionCall,
+    FunctionDeclaration,
+    Identifier,
+    IfStatement,
+    LogicalExpression,
+    MemberAttribute,
+    MemberFunctionCall,
+    NumberNode,
+    PrintStatement,
+    Program,
+    ReadStatement,
+    ReturnStatement,
+    Statement,
+    StringNode,
+    SwitchStatement,
     Tag,
-    Token, UnaryExpression,
+    Token,
+    UnaryExpression,
     VariableAssignment,
     VariableDeclaration,
-    VariableOperations, WhileStatement
+    VariableOperations,
+    WhileStatement
 } from "../data";
 import {Location} from "../utils/location";
+import assert from "assert";
 
 export class Parser {
     // TODO: null
     private index: number = 0;
 
     private readonly errors: DayErr[] = [];
-    private readonly ast: Program = { kind: "Program", body: [], start: { line: 1, column: 1 }, end: { line: 0, column: 0 } };
+    private readonly ast: Program = { kind: "Program", body: [], start: { line: 1, column: 1 }, end: null };
 
     private static TAGS: Map<Tag, string> = new Map([
         [Tag.EOF, "\'end of file\'"],
@@ -82,6 +103,7 @@ export class Parser {
             while (!this.isEOF()) {
                 this.ast.body.push(this.parseStatement());
             }
+            this.ast.end = this.current().end; // EOF
         } catch (error) {
             if (error instanceof DayErr) {
                 return false;
@@ -96,16 +118,16 @@ export class Parser {
         return this.peek() === Tag.EOF;
     }
     private current(): Token {
-        return this.tokens[this.index];
+        return this.tokens[this.index] || this.throwError("Unexpected end of file");
     }
     private previous(): Token {
-        return this.tokens[this.index - 1] || this.tokens[0];
+        return this.tokens[this.index - 1] || this.throwError("Unexpected start of file");
     }
     private peek(ahead = 0): Tag {
-        return this.tokens[this.index + ahead].tag;
+        return this.tokens[this.index + ahead].tag || this.throwError("Unexpected end of file");
     }
     private advance(): Token {
-        return this.tokens[this.index++] || this.tokens[this.tokens.length - 1];
+        return this.tokens[this.index++] || this.throwError("Unexpected end of file");
     }
     private match(expected: Tag): boolean {
         if (this.isEOF() || this.peek() !== expected) return false;
@@ -199,30 +221,28 @@ export class Parser {
 
         if (this.check(Tag.ID)) {
             const assignments: (VariableAssignment | VariableDeclaration)[] = this.createVariableAssignments(elements);
+            const id = this.advance();
             assignments.push({
                 kind: "VariableDeclaration",
-                type,
-                identifier: { kind: "Identifier", name: this.advance().value },
-            } as VariableDeclaration);
+                type: type.value,
+                identifier: { kind: "Identifier", name: id.value, start: id.start, end: id.end },
+                start: type.start,
+                end: id.end
+            });
             return this.parseVariableDeclaration(assignments);
         }
 
         if (this.check(Tag.COMMA, Tag.ASSIGN)) {
-            const returnTypes: string[] = [];
-            for (const el: Identifier of elements) {
-                returnTypes.push(el.name);
-            }
-            returnTypes.push(type);
-            return this.parseFunctionDeclaration(returnTypes);
+            return this.parseFunctionDeclaration(elements as Token[]);
         }
 
         this.throwError("Unexpected character", this.index - 1);
     }
-    private parseType(): string {
-        let type = this.advance().value;
+    private parseType(): Token {
+        let type = this.advance();
         while (this.match(Tag.LSP)) {
-            type += "[]";
-            this.expect(Tag.RSP);
+            type.value += "[]";
+            type.end = this.expect(Tag.RSP).end;
         }
         return type;
     }
@@ -235,7 +255,7 @@ export class Parser {
 
         if (op.kind === "MemberAttribute" || op.kind === "ArrayElement") {
             const assignments: (VariableAssignment | VariableDeclaration)[] = this.createVariableAssignments(elements);
-            assignments.push({ kind: "VariableAssignment", element: op } as VariableAssignment);
+            assignments.push({ kind: "VariableAssignment", element: op, start: op.start, end: op.end });
             return this.parseVariableDeclaration(assignments);
         }
 
@@ -243,11 +263,14 @@ export class Parser {
             if (this.check(Tag.ID)) {
                 const type = (op as Identifier).name;
                 const assignments: (VariableAssignment | VariableDeclaration)[] = this.createVariableAssignments(elements);
+                const id = this.advance();
                 assignments.push({
                     kind: "VariableDeclaration",
                     type,
-                    identifier: { kind: "Identifier", name: this.advance().value },
-                } as VariableDeclaration);
+                    identifier: { kind: "Identifier", name: id.value, start: id.start, end: id.end },
+                    start: op.start,
+                    end: id.end
+                });
                 return this.parseVariableDeclaration(assignments);
             }
 
@@ -267,7 +290,9 @@ export class Parser {
         for (const id of identifiers) {
             const assignment: VariableAssignment = {
                 kind: "VariableAssignment",
-                element: id
+                element: id,
+                start: id.start,
+                end: id.end
             };
             assignments.push(assignment);
         }
@@ -276,11 +301,12 @@ export class Parser {
     private parseVariableDeclaration(operations: (VariableDeclaration | VariableAssignment)[]): VariableOperations {
         const declarations: VariableOperations = {
             kind: "VariableOperations",
-            operations: null,
+            operations: operations.concat(this.parseVariableOperations()),
             operator: null,
             values: [],
+            start: operations[0].start,
+            end: operations[operations.length - 1].end
         };
-        declarations.operations = operations.concat(this.parseVariableOperations())
 
         // check if it is a declaration or an assignment
         if (this.check(Tag.ASSIGN, Tag.SELF_INC, Tag.SELF_DEC)) {
@@ -288,6 +314,7 @@ export class Parser {
             do {
                 declarations.values.push(this.parseExpression());
             } while (this.match(Tag.COMMA));
+            declarations.end = declarations.values[declarations.values.length - 1].end
         } else {
             // if it is a declaration it can't have any assignment inside
             if (declarations.operations.some(op => op.kind === "VariableAssignment")) {
@@ -303,22 +330,31 @@ export class Parser {
             let declaration: VariableDeclaration | VariableAssignment;
             if (this.check(Tag.STR, Tag.NUM, Tag.BOOL))
                 declaration = this.parseTypedVariableDeclaration();
-            else if (this.check(Tag.UNDERSCORE))
-                declaration = { kind: "VariableAssignment", element: { kind: "Identifier", name: this.advance().value } } as VariableAssignment;
+            else if (this.check(Tag.UNDERSCORE)) {
+                const id = this.advance();
+                declaration = {
+                    kind: "VariableAssignment",
+                    element: { kind: "Identifier", name: id.value, start: id.start, end: id.end } as Identifier,
+                    start: id.start,
+                    end: id.end
+                };
+            }
             else if (this.check(Tag.ID)) {
                 if (this.peek(1) === Tag.LSP && this.peek(2) === Tag.RSP) declaration = this.parseTypedVariableDeclaration();
                 else {
-                    const op = this.parsePostfixExpression({ kind: "Identifier", name: this.advance().value } as Identifier);
+                    const token = this.advance();
+                    const op = this.parsePostfixExpression({ kind: "Identifier", name: token.value, start: token.start, end: token.end } as Identifier);
                     if (op.kind === "Identifier") {
                         if (this.check(Tag.ID)) {
-                            const type = (op as Identifier).name;
-                            const identifier: Identifier = { kind: "Identifier", name: this.advance().value };
-                            declaration = {kind: "VariableDeclaration", type, identifier} as VariableDeclaration;
+                            const type = (op as Identifier);
+                            const id = this.advance();
+                            const identifier: Identifier = { kind: "Identifier", name: id.value, start: id.start, end: id.end };
+                            declaration = { kind: "VariableDeclaration", type: type.name, identifier, start: type.start, end: id.end };
                         }
-                        else declaration = {kind: "VariableAssignment", element: op} as VariableAssignment;
+                        else declaration = { kind: "VariableAssignment", element: op, start: op.start, end: op.end };
                     }
                     else if (op.kind === "MemberAttribute" || op.kind === "ArrayElement") {
-                        declaration = { kind: "VariableAssignment", element: op } as VariableAssignment;
+                        declaration = { kind: "VariableAssignment", element: op, start: op.start, end: op.end };
                     }
                     else this.throwError("Unexpected token");
                 }
@@ -329,67 +365,91 @@ export class Parser {
     }
     private parseTypedVariableDeclaration(): VariableDeclaration {
         const type = this.parseType();
+        const id = this.advance();
         const identifier: Identifier = {
             kind: "Identifier",
-            name: this.advance().value,
+            name: id.value,
+            start: id.start,
+            end: id.end
         };
-        return { kind: "VariableDeclaration", type, identifier };
+        return { kind: "VariableDeclaration", type: type.value, identifier, start: type.start, end: id.end };
     }
-    private parseFunctionDeclaration(returnTypes: String[]): FunctionDeclaration {
+    private parseFunctionDeclaration(types: Token[]): FunctionDeclaration {
+        const returnTypes = types.concat(this.parseReturnTypes());
         const declaration: FunctionDeclaration = {
             kind: "FunctionDeclaration",
-            returnTypes: returnTypes.concat(this.parseReturnTypes()),
+            returnTypes: returnTypes.map(type => type.value),
             identifier: null,
             parameters: [],
             body: [],
+            start: returnTypes[0].start,
+            end: null
         };
 
         this.expect(Tag.ASSIGN);
 
+        const id = this.expect(Tag.ID, "Expected function name")
         declaration.identifier = {
             kind: "Identifier",
-            name: this.expect(Tag.ID, "Expected function name").value,
+            name: id.value,
+            start: id.start,
+            end: id.end
         };
         if (!this.match(Tag.RRP)) {
             declaration.parameters = this.parseParameters();
         }
         declaration.body = this.parseBlock();
+        declaration.end = this.previous().end; // }
 
         return declaration;
     }
-    private parseReturnTypes(): string[] {
-        const returnTypes: string[] = [];
+    private parseReturnTypes(): Token[] {
+        const returnTypes: Token[] = [];
         while (this.match(Tag.COMMA)) {
             returnTypes.push(this.parseType())
         }
         return returnTypes;
     }
     private parseUnderscoreDeclaration(elements: Identifier[]) {
-        elements.push({ kind: "Identifier", name: this.advance().value });
+        const id = this.advance();
+        elements.push({ kind: "Identifier", name: id.value, start: id.start, end: id.end });
         if (this.check(Tag.COMMA)) {
             return this.parseVariableDeclaration(this.createVariableAssignments(elements));
         }
 
         if (this.check(Tag.ASSIGN)) {
             if (elements.length !== 1) this.throwError("Void function cannot have multiple return types");
-            return this.parseFunctionDeclaration(["_"]);
+            return this.parseFunctionDeclaration(elements as Token[]);
         }
 
         return this.throwError("Unexpected token");
     }
-    private parseAssignOperator(elements: Identifier[]) {
+    private parseAssignOperator(elements: Identifier[]): VariableOperations | FunctionDeclaration {
         if (!(this.peek(1) === Tag.ID || this.peek(1) === Tag.UNDERSCORE)) return this.parseVariableDeclaration(this.createVariableAssignments(elements))
 
         this.advance() // Skip ASSIGN
 
-        if (this.isFunctionDeclaration()) return {kind: "FunctionDeclaration", returnTypes: elements.map(el => el.name), identifier: { kind: "Identifier", name: this.advance().value }, parameters: this.parseParameters(), body: this.parseBlock() } as FunctionDeclaration;
+        if (this.isFunctionDeclaration()) {
+            return {
+                kind: "FunctionDeclaration",
+                returnTypes: elements.map(el => el.name),
+                identifier: {kind: "Identifier", name: this.current().value, start: this.current().start, end: this.advance().end } as Identifier,
+                parameters: this.parseParameters(),
+                body: this.parseBlock(),
+                start: elements[0].start,
+                end: this.previous().end // }
+            };
+        }
 
         const declarations: VariableOperations = {
             kind: "VariableOperations",
             operations: this.createVariableAssignments(elements),
             operator: Tag.ASSIGN,
             values: [this.parseExpression()],
+            start: elements[0].start,
+            end: null
         };
+        declarations.end = declarations.values[declarations.values.length - 1].end;
         while (this.match(Tag.COMMA)) {
             declarations.values.push(this.parseExpression());
         }
@@ -403,12 +463,12 @@ export class Parser {
             if (this.check(Tag.LSP)) {
                 base = this.parseArrayElement(base);
             } else if (this.match(Tag.DOT)) {
-                const token = this.advance()
+                const id = this.advance()
                 const identifier: Identifier = {
                     kind: "Identifier",
-                    name: token.value,
-                    start: token.start,
-                    end: token.end
+                    name: id.value,
+                    start: id.start,
+                    end: id.end
                 };
                 if (this.check(Tag.LRP)) {
                     const func = this.parseFunctionCall(identifier);
@@ -429,13 +489,13 @@ export class Parser {
                     } as MemberAttribute;
                 }
             } else if (this.check(Tag.INC, Tag.DEC)) {
-                const token = this.advance();
+                const operator = this.advance();
                 base = {
                     kind: "UnaryExpression",
-                    operator: token.tag,
+                    operator: operator.tag,
                     base,
                     start: base.start,
-                    end: token.end
+                    end: operator.end
                 } as UnaryExpression;
                 break;
             } else {
@@ -468,10 +528,13 @@ export class Parser {
         if (!this.match(Tag.RRP)) {
             do {
                 const type = this.parseType();
+                const id = this.expect(Tag.ID, "Expected parameter name");
                 parameters.push({
                     kind: "VariableDeclaration",
-                    type,
-                    identifier: { kind: "Identifier", name: this.expect(Tag.ID, "Expected parameter name").value },
+                    type: type.value,
+                    identifier: { kind: "Identifier", name: id.value, start: id.start, end: id.end },
+                    start: type.start,
+                    end: id.end
                 });
             } while (this.match(Tag.COMMA));
             this.expect(Tag.RRP);
@@ -483,11 +546,14 @@ export class Parser {
             kind: "ArrayElement",
             array: base,
             indexes: [],
+            start: base.start,
+            end: null,
         };
         while (this.match(Tag.LSP)) {
             element.indexes.push(this.parseExpression());
-            this.expect(Tag.RSP);
+            element.end = this.expect(Tag.RSP).end;
         }
+        assert(element.end); // should always be set
         return element;
     }
     private parseExpression(): Expression {
@@ -510,6 +576,40 @@ export class Parser {
 
         return left;
     }
+    // TODO: check if the iterative method works cause it's just better
+    // private parseBinaryExpression(precedence: number): Expression {
+    //     let left: Expression = this.parseUnaryExpression();
+    //     let operatorStack: Tag[] = [];
+    //     let rightStack: Expression[] = [];
+    //
+    //     while (true) {
+    //         const operator = this.peek();
+    //         const newPrecedence = this.getBinaryPrecedence(operator);
+    //         if (newPrecedence <= precedence) {
+    //             break;
+    //         }
+    //
+    //         this.advance();
+    //         const right = this.parseUnaryExpression();
+    //
+    //         while (operatorStack.length > 0 && this.getBinaryPrecedence(operatorStack[operatorStack.length - 1]) >= newPrecedence) {
+    //             const prevRight = rightStack.pop()!;
+    //             const prevOperator = operatorStack.pop()!;
+    //             left = this.createBinaryOrLogicalExpression(left, prevOperator, prevRight);
+    //         }
+    //
+    //         operatorStack.push(operator);
+    //         rightStack.push(right);
+    //     }
+    //
+    //     while (operatorStack.length > 0) {
+    //         const right = rightStack.pop()!;
+    //         const operator = operatorStack.pop()!;
+    //         left = this.createBinaryOrLogicalExpression(left, operator, right);
+    //     }
+    //
+    //     return left;
+    // }
     private getBinaryPrecedence(operator: Tag): number {
         switch (operator) {
             case Tag.OR:
@@ -538,24 +638,24 @@ export class Parser {
                 return 0;
         }
     }
-    private createBinaryOrLogicalExpression(
-        left: Expression,
-        operator: Tag,
-        right: Expression,
-    ): BinaryExpression | LogicalExpression {
+    private createBinaryOrLogicalExpression(left: Expression, operator: Tag, right: Expression): BinaryExpression | LogicalExpression {
         if (this.isLogicalOperator(operator))
             return {
                 kind: "LogicalExpression",
                 left,
                 operator: operator,
                 right,
-            } as LogicalExpression;
+                start: left.start,
+                end: right.end,
+            };
         return {
             kind: "BinaryExpression",
             left,
             operator: operator,
             right,
-        } as BinaryExpression;
+            start: left.start,
+            end: right.end,
+        };
     }
     private isLogicalOperator(operator: Tag): boolean {
         const logicalOperators: Tag[] = [
@@ -572,14 +672,26 @@ export class Parser {
     }
     private parseUnaryExpression(): Expression {
         if (this.check(Tag.MINUS, Tag.NOT)) {
-            const start_token = this.current();
-            const operator = this.advance().tag;
+            const op = this.advance();
             const base = this.parseUnaryExpression();
 
-            return { kind: "UnaryExpression", operator, base/*, start: { line: start_token.line, column: start_token.start }, end: base.end*/ } as UnaryExpression;
+            return { kind: "UnaryExpression", operator: op.tag, base, start: op.start, end: base.end } as UnaryExpression;
         }
         return this.parsePrimaryExpression();
     }
+    // TODO: check if the iterative method works cause it's just better
+    // private parseUnaryExpression(): Expression {
+    //     let operators: Tag[] = [];
+    //     while (this.check(Tag.MINUS, Tag.NOT)) {
+    //         operators.push(this.advance().tag);
+    //     }
+    //     let expr = this.parsePrimaryExpression();
+    //     while (operators.length > 0) {
+    //         const op = operators.pop()!;
+    //         expr = { kind: "UnaryExpression", operator: op, base: expr, start: expr.start, end: expr.end } as UnaryExpression;
+    //     }
+    //     return expr;
+    // }
     private parsePrimaryExpression(): Expression {
         let expr: Expression;
 
@@ -605,9 +717,12 @@ export class Parser {
         return this.parsePostfixExpression(expr);
     }
     private parseIdentifierOrFunctionCall(): Expression {
+        const id = this.advance();
         const identifier: Identifier = {
             kind: "Identifier",
-            name: this.advance().value,
+            name: id.value,
+            start: id.start,
+            end: id.end
         };
         if (this.check(Tag.LRP)) {
             return this.parseFunctionCall(identifier);
@@ -615,32 +730,34 @@ export class Parser {
         return identifier;
     }
     private parseNumberLiteral(): NumberNode {
-        const token = this.advance();
-        return { kind: "Number", value: Number(token.value), start: token.start, end: token.end } as NumberNode; // TODO remove as
+        const literal = this.advance();
+        return { kind: "Number", value: Number(literal.value), start: literal.start, end: literal.end };
     }
     private parseStringLiteral(): StringNode {
-        const token = this.advance();
-        return { kind: "String", value: String(token.value), start: token.start, end: token.end } as StringNode; // TODO remove as
+        const literal = this.advance();
+        return { kind: "String", value: String(literal.value), start: literal.start, end: literal.end };
     }
     private parseBooleanLiteral(): BooleanNode {
-        const token = this.advance();
-        return { kind: "Boolean", value: token.value === "true", start: token.start, end: token.end } as BooleanNode; // TODO remove as
+        const literal = this.advance();
+        return { kind: "Boolean", value: literal.value === "true", start: literal.start, end: literal.end };
     }
     private parseFString(): FString {
-        const value: Expression[] = [];
+        const string: FString = { kind: "F-String", value: [], start: this.previous().start, end: null };
         while (!this.match(Tag.QUOTE)) {
             if (this.match(Tag.LCP)) {
-                value.push(this.parseExpression());
+                string.value.push(this.parseExpression());
                 this.expect(Tag.RCP);
             } else if (this.check(Tag.TEXT)) {
-                value.push(this.parseStringLiteral());
+                string.value.push(this.parseStringLiteral());
             } else {
                 this.throwError("Unexpected token");
             }
         }
-        return { kind: "F-String", value };
+        string.end = this.previous().end; // '
+        return string;
     }
     private parseArray(): ArrayNode {
+        const start = this.previous().start; // [
         const elements: Expression[] = [];
         if (!this.match(Tag.RSP)) {
             do {
@@ -648,7 +765,8 @@ export class Parser {
             } while (this.match(Tag.COMMA));
             this.expect(Tag.RSP);
         }
-        return { kind: "Array", elements };
+        
+        return { kind: "Array", elements, start, end: this.previous().end }; // ]
     }
     private parseParenthesizeExpression(): Expression {
         const expr = this.parseExpression();
@@ -670,8 +788,8 @@ export class Parser {
             kind: "PrintStatement",
             arguments: [],
             start,
-            end: { line: 0, column: 0 },
-        } as PrintStatement; // TODO remove as
+            end: null,
+        };
         this.expect(Tag.LRP);
         if (!this.match(Tag.RRP)) {
             do {
@@ -687,12 +805,13 @@ export class Parser {
             kind: "ReadStatement",
             arguments: [],
             start,
-            end: { line: 0, column: 0 },
-        } as ReadStatement; // TODO remove as
+            end: null,
+        };
         this.match(Tag.LRP);
         do {
             if (!this.check(Tag.ID)) this.throwError("Expected identifier");
-            statement.arguments.push(this.parsePostfixExpression({ kind: "Identifier", name: this.advance().value } as Identifier));
+            const id = this.advance();
+            statement.arguments.push(this.parsePostfixExpression({ kind: "Identifier", name: id.value, start: id.start, end: id.end } as Identifier));
         } while (this.match(Tag.COMMA));
         statement.end = this.expect(Tag.RRP).end;
         return statement;
@@ -702,8 +821,8 @@ export class Parser {
             kind: "ReturnStatement",
             values: [],
             start,
-            end: { line: 0, column: 0 },
-        } as ReturnStatement; // TODO remove as
+            end: null,
+        };
         this.match(Tag.LRP);
         if (!this.match(Tag.RRP)) {
             do {
@@ -714,27 +833,47 @@ export class Parser {
         statement.end = this.previous().end;
         return statement
     }
+    // private parseIfStatement(): IfStatement {
+    //     const start = this.previous().start; // IF
+    //     const condition = this.parseCondition();
+    //     const body = this.parseBlock();
+    //     let end = this.previous().end; // }
+    //
+    //     let elseBody: Statement[] | null = null;
+    //     if (this.match(Tag.ELSE)) {
+    //         elseBody = this.parseBlock();
+    //         end = this.previous().end; // }
+    //     }
+    //    
+    //     return { kind: "IfStatement", condition, body, elseBody, start, end };
+    // }
     private parseIfStatement(): IfStatement {
-        const condition = this.parseCondition();
-        const body = this.parseBlock();
-
-        let elseBody: Statement[] | null = null;
-        if (this.match(Tag.ELSE)) {
-            elseBody = this.parseBlock();
+        const start = this.previous().start; // IF
+        return {
+            kind: "IfStatement",
+            condition: this.parseCondition(),
+            body: this.parseBlock(),
+            elseBody: this.match(Tag.ELSE) ? this.parseBlock() : [],
+            start,
+            end: this.previous().end,
         }
-
-        return { kind: "IfStatement", condition, body, elseBody };
     }
     private parseWhileStatement(): WhileStatement {
-        const condition = this.parseCondition();
-        const body = this.parseBlock();
-
-        return { kind: "WhileStatement", condition, body };
+        const start = this.previous().start; // WHILE
+        return {
+            kind: "WhileStatement",
+            condition: this.parseCondition(),
+            body: this.parseBlock(),
+            start,
+            end: this.previous().end,
+        }
     }
     private parseForStatement(): ForStatement {
+        const start = this.previous().start; // FOR
         this.expect(Tag.LRP);
-
-        const iterator : Identifier = { kind: "Identifier", name: this.expect(Tag.ID, "Expected iterator").value };
+        
+        const id = this.expect(Tag.ID, "Expected iterator");
+        const iterator : Identifier = { kind: "Identifier", name: id.value, start: id.start, end: id.end };
         this.expect(Tag.COMMA);
 
         const limit = this.parseExpression();
@@ -742,32 +881,40 @@ export class Parser {
 
         const body = this.parseBlock();
 
-        return { kind: "ForStatement", iterator, limit, body };
+        return { kind: "ForStatement", iterator, limit, body, start, end: this.previous().end }; // }
     }
     private parseSwitchStatement(): SwitchStatement {
+        const start = this.previous().start; // SWITCH
         const statement: SwitchStatement = {
             kind: "SwitchStatement",
             expression: this.parseExpression(),
             cases: [],
             default: [],
+            start,
+            end: null,
         };
 
         this.expect(Tag.LCP);
-        if (this.match(Tag.RCP)) return statement;
+        if (this.match(Tag.RCP)) {
+            statement.end = this.previous().end; // }
+            return statement;
+        }
 
         while (this.match(Tag.CASE)) {
+            const case_start = this.previous().start; // CASE
             const values = [];
             do {
                 values.push(this.parseExpression());
             } while (this.match(Tag.COMMA));
             const body = this.parseBlock();
-            statement.cases.push({ kind: "CaseStatement", values, body });
+            statement.cases.push({ kind: "CaseStatement", values, body, start: case_start, end: this.previous().end }); // }
         }
 
         while (!this.match(Tag.RCP)) {
             statement.default.push(this.parseStatement());
         }
-
+        statement.end = this.previous().end; // }
+        
         return statement;
     }
     private parseCondition(): Expression {
@@ -787,18 +934,25 @@ export class Parser {
         return body;
     }
     private parseClassDeclaration(): ClassDeclaration {
+        const start = this.previous().start; // CLASS
+        const id = this.expect(Tag.ID, "Expected class name");
         const identifier: Identifier = {
             kind: "Identifier",
-            name: this.expect(Tag.ID, "Expected class name").value,
+            name: id.value,
+            start: id.start,
+            end: id.end
         };
         const declaration: ClassDeclaration = {
             kind: "ClassDeclaration",
             identifier,
             body: [],
+            start,
+            end: null,
         };
 
         this.expect(Tag.ASSIGN);
         declaration.body = this.parseBlock();
+        declaration.end = this.previous().end; // }
 
         return declaration;
     }
