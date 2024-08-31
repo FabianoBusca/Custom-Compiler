@@ -124,7 +124,7 @@ export class Parser {
         return this.tokens[this.index - 1] || this.throwError("Unexpected start of file");
     }
     private peek(ahead = 0): Tag {
-        return this.tokens[this.index + ahead].tag || this.throwError("Unexpected end of file");
+        return (this.tokens[this.index + ahead].tag !== undefined) ? this.tokens[this.index + ahead].tag : this.throwError("Unexpected end of file");
     }
     private advance(): Token {
         return this.tokens[this.index++] || this.throwError("Unexpected end of file");
@@ -233,7 +233,7 @@ export class Parser {
         }
 
         if (this.check(Tag.COMMA, Tag.ASSIGN)) {
-            return this.parseFunctionDeclaration(elements as Token[]);
+            return this.parseFunctionDeclaration(elements);
         }
 
         this.throwError("Unexpected character", this.index - 1);
@@ -374,15 +374,14 @@ export class Parser {
         };
         return { kind: "VariableDeclaration", type: type.value, identifier, start: type.start, end: id.end };
     }
-    private parseFunctionDeclaration(types: Token[]): FunctionDeclaration {
-        const returnTypes = types.concat(this.parseReturnTypes());
+    private parseFunctionDeclaration(types: Identifier[]): FunctionDeclaration {
         const declaration: FunctionDeclaration = {
             kind: "FunctionDeclaration",
-            returnTypes: returnTypes.map(type => type.value),
+            returnTypes: types.map(type => type.name).concat(this.parseReturnTypes().map(type => type.value)),
             identifier: null,
             parameters: [],
             body: [],
-            start: returnTypes[0].start,
+            start: types[0].start,
             end: null
         };
 
@@ -419,7 +418,7 @@ export class Parser {
 
         if (this.check(Tag.ASSIGN)) {
             if (elements.length !== 1) this.throwError("Void function cannot have multiple return types");
-            return this.parseFunctionDeclaration(elements as Token[]);
+            return this.parseFunctionDeclaration(elements);
         }
 
         return this.throwError("Unexpected token");

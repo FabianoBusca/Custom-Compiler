@@ -1,6 +1,11 @@
 import {Lexer, Parser, SymbolTableBuilder, TypeChecker} from "../../src/compiler";
 import {DayErr} from "../../src/utils/dayErr";
 import {Program, Token} from "../../src/data";
+import fs from "fs";
+import * as path from "path";
+
+const TEST_FOLDER = './tests';
+const PARSER_FOLDER = 'parser';
 
 export function lexerTest(source: string, expected: Token[], errors?: DayErr[]) {
     const lexer = new Lexer(source);
@@ -25,7 +30,8 @@ export function lexerTest(source: string, expected: Token[], errors?: DayErr[]) 
     expect(tokens).toEqual(expected);
 }
 
-export function parserTest(source: string, expected: Program, errors?: DayErr[]) {
+export function parserTest(source_path: string, expected: Program, errors?: DayErr[]) {
+    const source = (fs.readFileSync(path.join(TEST_FOLDER, PARSER_FOLDER, source_path), 'utf8')).replace('\n\r', '\n');
     const lexer = new Lexer(source);
     lexer.tokenize();
     const tokens = lexer.getTokens();

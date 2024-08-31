@@ -1,0 +1,1 @@
+a, b, str d = foo().k(7 ** 2) + 1, 5, 'Hello'

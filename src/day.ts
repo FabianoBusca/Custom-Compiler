@@ -58,7 +58,7 @@ function compile(source: string, flag: string) {
 
 }
 
-async function main() {
+function main() {
 
     if (process.argv.length != 3 && process.argv.length != 4) {
         console.error("Usage...");
@@ -80,7 +80,7 @@ async function main() {
     const filePath = path.join(scriptsPath, process.argv[process.argv.length - 1]);
     let content = '';
     try {
-        content = await fs.promises.readFile(filePath, 'utf8');
+        content = fs.readFileSync(filePath, 'utf8');
     } catch (err) {
         console.error(`Unable to read file: ${err}`);
         process.exit(1);
@@ -89,4 +89,4 @@ async function main() {
     compile(content, process.argv[2]);
 }
 
-await main();
+main();

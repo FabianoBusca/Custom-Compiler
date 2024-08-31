@@ -1,0 +1,13 @@
+while (-a().b.length() == 1) {
+  if (a().b[0] == 1) {
+    for (i, 5 + a().b.length()) {
+      print(i)
+    }
+  } else {
+    switch (x % 2 == 0) {
+      for (i, a().b) {
+        print(i)
+      }
+    }
+  }
+}

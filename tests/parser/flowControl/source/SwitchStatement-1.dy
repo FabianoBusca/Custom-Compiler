@@ -1,0 +1,14 @@
+switch (foo() + 1) {
+  case 1 + 1 {
+    print("1")
+  }
+  case a() {
+    print("a")
+  }
+  case b[0] {
+    print("b")
+  }
+
+  num[] x = 4
+  print(x)
+}
