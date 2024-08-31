@@ -1,5 +1,5 @@
 import {ASTNode, ClassDeclaration, FunctionDeclaration, Program, SymbolTable, VariableOperations} from "../data";
-import {DayError} from "../utils/error";
+import {DayError} from "../utils";
 
 export class SymbolTableBuilder {
     private scope: SymbolTable;

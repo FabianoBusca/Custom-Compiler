@@ -9,7 +9,7 @@ import {
     Identifier,
     MemberAttribute,
     MemberFunctionCall,
-    Program,
+    Program, ReadStatement,
     ReturnStatement,
     Statement,
     SymbolTable,
@@ -17,7 +17,7 @@ import {
     VariableDeclaration,
     VariableOperations
 } from "../data";
-import {DayError} from "../utils/error";
+import {DayError} from "../utils";
 import assert from "assert";
 
 const EMPTY = '$_empty_$';
@@ -65,6 +65,9 @@ export class TypeChecker {
                 break;
             case 'FunctionCall':
                 this.visitFunctionCall(statement as FunctionCall);
+                break;
+            case 'ReadStatement':
+                this.visitReadStatement(statement as ReadStatement);
                 break;
             default:
                 this.throwError(`Unknown statement type: ${statement.kind}`);
@@ -192,6 +195,13 @@ export class TypeChecker {
         });
     }
 
+    private visitReadStatement(node: ReadStatement) {
+        const exprType = this.visitSimpleExpression(node.arguments[0]); // can't be a complex expression
+        node.arguments.forEach(argument => {
+            this.visitExpression(argument)
+        });
+    }
+
     private visitSimpleExpression(node: Expression): Type {
         switch (node.kind) {
             case 'Number': return 'num';
@@ -207,7 +217,8 @@ export class TypeChecker {
 
     private visitFString(node: FString): Type {
         node.value.forEach(exp => {
-            const type = this.visitSimpleExpression(exp);
+            const type = this.visitExpression(exp)[0];
+            if (typeof type !== "string") this.throwError('Complex expression inside F-string')
             if (type !== 'str' && type !== 'num' && type !== 'bool' && type !== EMPTY) {
                 this.throwError('F-String expressions must be of common type.');
             }

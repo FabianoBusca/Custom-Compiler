@@ -62,7 +62,6 @@ export interface PrintStatement extends Statement {
 }
 export interface ReadStatement extends Statement {
     kind: 'ReadStatement';
-    // TODO: id or expr? postfix
     arguments: Expression[];
 }
 export interface Expression extends Statement {}

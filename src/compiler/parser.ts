@@ -1,4 +1,4 @@
-import {DayErr} from "../utils/dayErr";
+import {DayErr, Location} from "../utils";
 import {
     ArrayElement,
     ArrayNode,
@@ -31,7 +31,6 @@ import {
     VariableOperations,
     WhileStatement
 } from "../data";
-import {Location} from "../utils/location";
 import assert from "assert";
 
 export class Parser {
@@ -146,10 +145,6 @@ export class Parser {
     private clamp(index: number): number {
         return Math.max(0, Math.min(index, this.tokens.length - 1));
     }
-    // private setLocation(node: ASTNode, start_token: Token, end_token: Token): void {
-    //     node.start = { line: start_token.line, column: start_token.start };
-    //     node.end = { line: end_token.line, column: end_token.end };
-    // }
     private throwError(message: string, token_index?: number): never {
         if (!token_index) token_index = this.index;
         else token_index = this.clamp(token_index);
@@ -224,7 +219,7 @@ export class Parser {
             const id = this.advance();
             assignments.push({
                 kind: "VariableDeclaration",
-                type: type.value,
+                type: type.name,
                 identifier: { kind: "Identifier", name: id.value, start: id.start, end: id.end },
                 start: type.start,
                 end: id.end
@@ -233,18 +228,19 @@ export class Parser {
         }
 
         if (this.check(Tag.COMMA, Tag.ASSIGN)) {
+            elements.push(type);
             return this.parseFunctionDeclaration(elements);
         }
 
         this.throwError("Unexpected character", this.index - 1);
     }
-    private parseType(): Token {
+    private parseType(): Identifier {
         let type = this.advance();
         while (this.match(Tag.LSP)) {
             type.value += "[]";
             type.end = this.expect(Tag.RSP).end;
         }
-        return type;
+        return { kind: "Identifier", name: type.value, start: type.start, end: type.end };
     }
     private parseIdentifierDeclaration(elements: Identifier[]): Statement {
         const op: Expression = this.parseExpression()
@@ -372,16 +368,18 @@ export class Parser {
             start: id.start,
             end: id.end
         };
-        return { kind: "VariableDeclaration", type: type.value, identifier, start: type.start, end: id.end };
+        return { kind: "VariableDeclaration", type: type.name, identifier, start: type.start, end: id.end };
     }
     private parseFunctionDeclaration(types: Identifier[]): FunctionDeclaration {
+        const returnTypes = types.map(type => type.name)
+        const additionalReturnTypes = this.parseReturnTypes();
         const declaration: FunctionDeclaration = {
             kind: "FunctionDeclaration",
-            returnTypes: types.map(type => type.name).concat(this.parseReturnTypes().map(type => type.value)),
+            returnTypes: returnTypes.concat(additionalReturnTypes.map(type => type.name)),
             identifier: null,
             parameters: [],
             body: [],
-            start: types[0].start,
+            start: types[0]?.start || additionalReturnTypes[0]?.start,
             end: null
         };
 
@@ -402,8 +400,8 @@ export class Parser {
 
         return declaration;
     }
-    private parseReturnTypes(): Token[] {
-        const returnTypes: Token[] = [];
+    private parseReturnTypes(): Identifier[] {
+        const returnTypes: Identifier[] = [];
         while (this.match(Tag.COMMA)) {
             returnTypes.push(this.parseType())
         }
@@ -530,7 +528,7 @@ export class Parser {
                 const id = this.expect(Tag.ID, "Expected parameter name");
                 parameters.push({
                     kind: "VariableDeclaration",
-                    type: type.value,
+                    type: type.name,
                     identifier: { kind: "Identifier", name: id.value, start: id.start, end: id.end },
                     start: type.start,
                     end: id.end
@@ -800,6 +798,7 @@ export class Parser {
         return statement;
     }
     private parseReadStatement(start: Location): ReadStatement {
+        // TODO: declaration inside read statement?
         const statement: ReadStatement = {
             kind: "ReadStatement",
             arguments: [],
@@ -808,9 +807,9 @@ export class Parser {
         };
         this.match(Tag.LRP);
         do {
-            if (!this.check(Tag.ID)) this.throwError("Expected identifier");
-            const id = this.advance();
-            statement.arguments.push(this.parsePostfixExpression({ kind: "Identifier", name: id.value, start: id.start, end: id.end } as Identifier));
+            const expr = this.parseExpression();
+            if (expr.kind === "FunctionCall" || expr.kind === "MemberFunctionCall") this.throwError("Cannot call a function inside a read statement");
+            statement.arguments.push(expr);
         } while (this.match(Tag.COMMA));
         statement.end = this.expect(Tag.RRP).end;
         return statement;
