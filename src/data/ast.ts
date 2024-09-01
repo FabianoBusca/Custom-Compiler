@@ -1,11 +1,16 @@
 import {Tag} from "./token";
-import {Location} from "../utils/location";
+import {Location} from "../utils";
 
-type NodeType = 'Program' | 'IfStatement' | 'WhileStatement' | 'ForStatement' | 'SwitchStatement' | 'CaseStatement' | 'VariableOperations' | 'VariableDeclaration' | 'VariableAssignment' | 'Identifier' | 'FunctionDeclaration' | 'ClassDeclaration' | 'ReturnStatement' | 'PrintStatement' | 'ReadStatement' | 'MemberFunctionCall' | 'MemberAttribute' | 'UnaryExpression' | 'ArrayElement' | 'FunctionCall' | 'LogicalExpression' | 'BinaryExpression' | 'Number' | 'String' | 'Boolean' | 'F-String' | 'Array';
+type NodeType = 'Program' | 'Type' | 'IfStatement' | 'WhileStatement' | 'ForStatement' | 'SwitchStatement' | 'CaseStatement' | 'VariableOperations' | 'VariableDeclaration' | 'VariableAssignment' | 'Identifier' | 'FunctionDeclaration' | 'ClassDeclaration' | 'ReturnStatement' | 'PrintStatement' | 'ReadStatement' | 'MemberFunctionCall' | 'MemberAttribute' | 'UnaryExpression' | 'ArrayElement' | 'FunctionCall' | 'LogicalExpression' | 'BinaryExpression' | 'Number' | 'String' | 'Boolean' | 'F-String' | 'Array';
 export interface ASTNode {
     kind: NodeType;
     start: Location;
     end: Location;
+}
+export interface Type extends ASTNode {
+    kind: 'Type';
+    name: string;
+    depth: number;
 }
 export interface Statement extends ASTNode {}
 export interface Program extends ASTNode {
@@ -42,7 +47,7 @@ export interface CaseStatement extends Statement {
 }
 export interface FunctionDeclaration extends Statement {
     kind: 'FunctionDeclaration';
-    returnTypes: string[];
+    returnTypes: Type[];
     identifier: Identifier;
     parameters: VariableDeclaration[];
     body: Statement[];
@@ -78,7 +83,7 @@ export interface VariableOperations extends Statement {
 }
 export interface VariableDeclaration extends Statement {
     kind: 'VariableDeclaration';
-    type: string;
+    type: Type;
     identifier: Identifier;
 }
 export interface VariableAssignment extends Statement {

@@ -1,6 +1,5 @@
-import {parserTest} from "../../utils/utils";
 import {Program} from "../../../src/data";
-import {getTestFilePath, SOURCE_FOLDER} from "../../utils/constat";
+import {getTestFilePath, parserTest, SOURCE_FOLDER} from "../../utils";
 
 const SUIT_FOLDER = 'flowControl';
 
@@ -1679,5 +1678,4 @@ describe("Flow control statements", () => {
 
       parserTest(getTestFilePath(SUIT_FOLDER, SOURCE_FOLDER, "ComplexFlowControlStatement.dy"), expected);
     });
-
 });

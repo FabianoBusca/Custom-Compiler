@@ -1,4 +1,1 @@
-num[], num = foo() {
-    num[] a, num b
-    return(a, a[0])
-}
+a = foo()[0]

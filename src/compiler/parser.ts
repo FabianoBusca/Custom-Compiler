@@ -24,7 +24,7 @@ import {
     StringNode,
     SwitchStatement,
     Tag,
-    Token,
+    Token, Type,
     UnaryExpression,
     VariableAssignment,
     VariableDeclaration,
@@ -32,13 +32,14 @@ import {
     WhileStatement
 } from "../data";
 import assert from "assert";
+import {ASTFactory} from "../utils/ASTFactory";
 
 export class Parser {
     // TODO: null
     private index: number = 0;
 
     private readonly errors: DayErr[] = [];
-    private readonly ast: Program = { kind: "Program", body: [], start: { line: 1, column: 1 }, end: null };
+    private readonly ast: Program = ASTFactory.createProgram([], { line: 1, column: 1 }, null);
 
     private static TAGS: Map<Tag, string> = new Map([
         [Tag.EOF, "\'end of file\'"],
@@ -102,6 +103,7 @@ export class Parser {
             while (!this.isEOF()) {
                 this.ast.body.push(this.parseStatement());
             }
+            if (this.ast.body.length > 0) this.ast.start = this.ast.body[0].start;
             this.ast.end = this.current().end; // EOF
         } catch (error) {
             if (error instanceof DayErr) {
@@ -117,16 +119,16 @@ export class Parser {
         return this.peek() === Tag.EOF;
     }
     private current(): Token {
-        return this.tokens[this.index] || this.throwError("Unexpected end of file");
+        return this.tokens[this.index] || ((): never => { throw new Error("Unexpected end of file"); })();
     }
     private previous(): Token {
-        return this.tokens[this.index - 1] || this.throwError("Unexpected start of file");
+        return this.tokens[this.index - 1] || ((): never => { throw new Error("Unexpected start of file"); })();
     }
     private peek(ahead = 0): Tag {
-        return (this.tokens[this.index + ahead].tag !== undefined) ? this.tokens[this.index + ahead].tag : this.throwError("Unexpected end of file");
+        return (this.tokens[this.index + ahead].tag !== undefined) ? this.tokens[this.index + ahead].tag : ((): never => { throw new Error("Unexpected end of file"); })();
     }
     private advance(): Token {
-        return this.tokens[this.index++] || this.throwError("Unexpected end of file");
+        return this.tokens[this.index++] || ((): never => { throw new Error("Unexpected end of file"); })();
     }
     private match(expected: Tag): boolean {
         if (this.isEOF() || this.peek() !== expected) return false;
@@ -217,30 +219,27 @@ export class Parser {
         if (this.check(Tag.ID)) {
             const assignments: (VariableAssignment | VariableDeclaration)[] = this.createVariableAssignments(elements);
             const id = this.advance();
-            assignments.push({
-                kind: "VariableDeclaration",
-                type: type.name,
-                identifier: { kind: "Identifier", name: id.value, start: id.start, end: id.end },
-                start: type.start,
-                end: id.end
-            });
+            assignments.push(ASTFactory.createVariableDeclaration(type, ASTFactory.createIdentifier(id)));
             return this.parseVariableDeclaration(assignments);
         }
 
         if (this.check(Tag.COMMA, Tag.ASSIGN)) {
-            elements.push(type);
-            return this.parseFunctionDeclaration(elements);
+            const types = elements.map(el => ASTFactory.createType(el.name, 0, el.start, el.end));
+            types.push(type);
+            return this.parseFunctionDeclaration(types);
         }
 
         this.throwError("Unexpected character", this.index - 1);
     }
-    private parseType(): Identifier {
-        let type = this.advance();
+    private parseType(): Type {
+        const token = this.advance();
+        let depth = 0;
+        let end = token.end;
         while (this.match(Tag.LSP)) {
-            type.value += "[]";
-            type.end = this.expect(Tag.RSP).end;
+            depth++;
+            end = this.expect(Tag.RSP).end;
         }
-        return { kind: "Identifier", name: type.value, start: type.start, end: type.end };
+        return ASTFactory.createType(token.value, depth, token.start, end);
     }
     private parseIdentifierDeclaration(elements: Identifier[]): Statement {
         const op: Expression = this.parseExpression()
@@ -257,16 +256,10 @@ export class Parser {
 
         if (op.kind === "Identifier") {
             if (this.check(Tag.ID)) {
-                const type = (op as Identifier).name;
+                const type = ASTFactory.createType((op as Identifier).name, 0, op.start, op.end);
                 const assignments: (VariableAssignment | VariableDeclaration)[] = this.createVariableAssignments(elements);
                 const id = this.advance();
-                assignments.push({
-                    kind: "VariableDeclaration",
-                    type,
-                    identifier: { kind: "Identifier", name: id.value, start: id.start, end: id.end },
-                    start: op.start,
-                    end: id.end
-                });
+                assignments.push(ASTFactory.createVariableDeclaration(type, ASTFactory.createIdentifier(id)));
                 return this.parseVariableDeclaration(assignments);
             }
 
@@ -284,25 +277,13 @@ export class Parser {
     private createVariableAssignments(identifiers: Identifier[]): VariableAssignment[] {
         const assignments: VariableAssignment[] = [];
         for (const id of identifiers) {
-            const assignment: VariableAssignment = {
-                kind: "VariableAssignment",
-                element: id,
-                start: id.start,
-                end: id.end
-            };
+            const assignment: VariableAssignment = ASTFactory.createVariableAssignment(id);
             assignments.push(assignment);
         }
         return assignments;
     }
     private parseVariableDeclaration(operations: (VariableDeclaration | VariableAssignment)[]): VariableOperations {
-        const declarations: VariableOperations = {
-            kind: "VariableOperations",
-            operations: operations.concat(this.parseVariableOperations()),
-            operator: null,
-            values: [],
-            start: operations[0].start,
-            end: operations[operations.length - 1].end
-        };
+        const declarations = ASTFactory.createVariableOperations(operations.concat(this.parseVariableOperations()), null, [], operations[0].start, operations[operations.length - 1].end);
 
         // check if it is a declaration or an assignment
         if (this.check(Tag.ASSIGN, Tag.SELF_INC, Tag.SELF_DEC)) {
@@ -328,29 +309,23 @@ export class Parser {
                 declaration = this.parseTypedVariableDeclaration();
             else if (this.check(Tag.UNDERSCORE)) {
                 const id = this.advance();
-                declaration = {
-                    kind: "VariableAssignment",
-                    element: { kind: "Identifier", name: id.value, start: id.start, end: id.end } as Identifier,
-                    start: id.start,
-                    end: id.end
-                };
+                declaration = ASTFactory.createVariableAssignment(ASTFactory.createIdentifier(id));
             }
             else if (this.check(Tag.ID)) {
                 if (this.peek(1) === Tag.LSP && this.peek(2) === Tag.RSP) declaration = this.parseTypedVariableDeclaration();
                 else {
-                    const token = this.advance();
-                    const op = this.parsePostfixExpression({ kind: "Identifier", name: token.value, start: token.start, end: token.end } as Identifier);
+                    const op = this.parsePostfixExpression(ASTFactory.createIdentifier(this.advance()));
                     if (op.kind === "Identifier") {
                         if (this.check(Tag.ID)) {
-                            const type = (op as Identifier);
+                            const type = ASTFactory.createType((op as Identifier).name, 0, op.start, op.end);
                             const id = this.advance();
-                            const identifier: Identifier = { kind: "Identifier", name: id.value, start: id.start, end: id.end };
-                            declaration = { kind: "VariableDeclaration", type: type.name, identifier, start: type.start, end: id.end };
+                            const identifier = ASTFactory.createIdentifier(id);
+                            declaration = ASTFactory.createVariableDeclaration(type, identifier);
                         }
-                        else declaration = { kind: "VariableAssignment", element: op, start: op.start, end: op.end };
+                        else declaration = ASTFactory.createVariableAssignment(op);
                     }
                     else if (op.kind === "MemberAttribute" || op.kind === "ArrayElement") {
-                        declaration = { kind: "VariableAssignment", element: op, start: op.start, end: op.end };
+                        declaration = ASTFactory.createVariableAssignment(op);
                     }
                     else this.throwError("Unexpected token");
                 }
@@ -362,36 +337,17 @@ export class Parser {
     private parseTypedVariableDeclaration(): VariableDeclaration {
         const type = this.parseType();
         const id = this.advance();
-        const identifier: Identifier = {
-            kind: "Identifier",
-            name: id.value,
-            start: id.start,
-            end: id.end
-        };
-        return { kind: "VariableDeclaration", type: type.name, identifier, start: type.start, end: id.end };
+        const identifier = ASTFactory.createIdentifier(id);
+        return ASTFactory.createVariableDeclaration(type, identifier);
     }
-    private parseFunctionDeclaration(types: Identifier[]): FunctionDeclaration {
-        const returnTypes = types.map(type => type.name)
-        const additionalReturnTypes = this.parseReturnTypes();
-        const declaration: FunctionDeclaration = {
-            kind: "FunctionDeclaration",
-            returnTypes: returnTypes.concat(additionalReturnTypes.map(type => type.name)),
-            identifier: null,
-            parameters: [],
-            body: [],
-            start: types[0]?.start || additionalReturnTypes[0]?.start,
-            end: null
-        };
+    private parseFunctionDeclaration(types: Type[]): FunctionDeclaration {
+        types = types.concat(this.parseReturnTypes());
+        const declaration = ASTFactory.createFunctionDeclaration(types, null, [], [], types[0].start, null);
 
         this.expect(Tag.ASSIGN);
 
         const id = this.expect(Tag.ID, "Expected function name")
-        declaration.identifier = {
-            kind: "Identifier",
-            name: id.value,
-            start: id.start,
-            end: id.end
-        };
+        declaration.identifier = ASTFactory.createIdentifier(id);
         if (!this.match(Tag.RRP)) {
             declaration.parameters = this.parseParameters();
         }
@@ -400,23 +356,22 @@ export class Parser {
 
         return declaration;
     }
-    private parseReturnTypes(): Identifier[] {
-        const returnTypes: Identifier[] = [];
+    private parseReturnTypes(): Type[] {
+        const returnTypes = [];
         while (this.match(Tag.COMMA)) {
             returnTypes.push(this.parseType())
         }
         return returnTypes;
     }
     private parseUnderscoreDeclaration(elements: Identifier[]) {
-        const id = this.advance();
-        elements.push({ kind: "Identifier", name: id.value, start: id.start, end: id.end });
+        elements.push(ASTFactory.createIdentifier(this.advance()));
         if (this.check(Tag.COMMA)) {
             return this.parseVariableDeclaration(this.createVariableAssignments(elements));
         }
 
         if (this.check(Tag.ASSIGN)) {
             if (elements.length !== 1) this.throwError("Void function cannot have multiple return types");
-            return this.parseFunctionDeclaration(elements);
+            return this.parseFunctionDeclaration(elements.map(el => ASTFactory.createType(el.name, 0, el.start, el.end)));
         }
 
         return this.throwError("Unexpected token");
@@ -427,26 +382,12 @@ export class Parser {
         this.advance() // Skip ASSIGN
 
         if (this.isFunctionDeclaration()) {
-            return {
-                kind: "FunctionDeclaration",
-                returnTypes: elements.map(el => el.name),
-                identifier: {kind: "Identifier", name: this.current().value, start: this.current().start, end: this.advance().end } as Identifier,
-                parameters: this.parseParameters(),
-                body: this.parseBlock(),
-                start: elements[0].start,
-                end: this.previous().end // }
-            };
+            return ASTFactory.createFunctionDeclaration(elements.map(el => ASTFactory.createType(el.name, 0, el.start, el.end)), ASTFactory.createIdentifier(this.advance()), this.parseParameters(), this.parseBlock(), elements[0].start, this.previous().end); // }
         }
-
-        const declarations: VariableOperations = {
-            kind: "VariableOperations",
-            operations: this.createVariableAssignments(elements),
-            operator: Tag.ASSIGN,
-            values: [this.parseExpression()],
-            start: elements[0].start,
-            end: null
-        };
+        
+        const declarations = ASTFactory.createVariableOperations(this.createVariableAssignments(elements), Tag.ASSIGN, [this.parseExpression()], elements[0].start, elements[0].start);
         declarations.end = declarations.values[declarations.values.length - 1].end;
+        
         while (this.match(Tag.COMMA)) {
             declarations.values.push(this.parseExpression());
         }
@@ -461,39 +402,16 @@ export class Parser {
                 base = this.parseArrayElement(base);
             } else if (this.match(Tag.DOT)) {
                 const id = this.advance()
-                const identifier: Identifier = {
-                    kind: "Identifier",
-                    name: id.value,
-                    start: id.start,
-                    end: id.end
-                };
+                const identifier = ASTFactory.createIdentifier(id);
                 if (this.check(Tag.LRP)) {
                     const func = this.parseFunctionCall(identifier);
-                    base = {
-                        kind: "MemberFunctionCall",
-                        member: base,
-                        function: func,
-                        start: base.start,
-                        end: func.end
-                    } as MemberFunctionCall;
+                    base = ASTFactory.createMemberFunctionCall(base as Identifier, func);
                 } else {
-                    base = {
-                        kind: "MemberAttribute",
-                        member: base,
-                        attribute: identifier,
-                        start: base.start,
-                        end: identifier.end
-                    } as MemberAttribute;
+                    base = ASTFactory.createMemberAttribute(base as Identifier, identifier);
                 }
             } else if (this.check(Tag.INC, Tag.DEC)) {
                 const operator = this.advance();
-                base = {
-                    kind: "UnaryExpression",
-                    operator: operator.tag,
-                    base,
-                    start: base.start,
-                    end: operator.end
-                } as UnaryExpression;
+                base = ASTFactory.createUnaryExpression(operator.tag, base, base.start, operator.end);
                 break;
             } else {
                 break;
@@ -502,13 +420,7 @@ export class Parser {
         return base;
     }
     private parseFunctionCall(identifier: Identifier): FunctionCall {
-        const call: FunctionCall = {
-            kind: "FunctionCall",
-            identifier,
-            arguments: [],
-            start: identifier.start,
-            end: { line: 0, column: 0 },
-        };
+        const call = ASTFactory.createFunctionCall(identifier, [], identifier.start, null);
         this.match(Tag.LRP);
         if (!this.match(Tag.RRP)) {
             do {
@@ -516,7 +428,7 @@ export class Parser {
             } while (this.match(Tag.COMMA));
             this.expect(Tag.RRP);
         }
-        call.end = this.previous().end;
+        call.end = this.previous().end; // )
         return call;
     }
     private parseParameters(): VariableDeclaration[] {
@@ -526,31 +438,20 @@ export class Parser {
             do {
                 const type = this.parseType();
                 const id = this.expect(Tag.ID, "Expected parameter name");
-                parameters.push({
-                    kind: "VariableDeclaration",
-                    type: type.name,
-                    identifier: { kind: "Identifier", name: id.value, start: id.start, end: id.end },
-                    start: type.start,
-                    end: id.end
-                });
+                parameters.push(ASTFactory.createVariableDeclaration(type, ASTFactory.createIdentifier(id)));
             } while (this.match(Tag.COMMA));
             this.expect(Tag.RRP);
         }
         return parameters;
     }
     private parseArrayElement(base: Expression): ArrayElement {
-        const element: ArrayElement = {
-            kind: "ArrayElement",
-            array: base,
-            indexes: [],
-            start: base.start,
-            end: null,
-        };
-        while (this.match(Tag.LSP)) {
+        const element = ASTFactory.createArrayElement(base, [], base.start, null);
+        this.advance(); // [
+        do {
             element.indexes.push(this.parseExpression());
             element.end = this.expect(Tag.RSP).end;
-        }
-        assert(element.end); // should always be set
+        } while (this.match(Tag.LSP))
+
         return element;
     }
     private parseExpression(): Expression {
@@ -637,22 +538,8 @@ export class Parser {
     }
     private createBinaryOrLogicalExpression(left: Expression, operator: Tag, right: Expression): BinaryExpression | LogicalExpression {
         if (this.isLogicalOperator(operator))
-            return {
-                kind: "LogicalExpression",
-                left,
-                operator: operator,
-                right,
-                start: left.start,
-                end: right.end,
-            };
-        return {
-            kind: "BinaryExpression",
-            left,
-            operator: operator,
-            right,
-            start: left.start,
-            end: right.end,
-        };
+            return ASTFactory.createLogicalExpression(left, operator, right);
+        return ASTFactory.createBinaryExpression(left, operator, right);
     }
     private isLogicalOperator(operator: Tag): boolean {
         const logicalOperators: Tag[] = [
@@ -672,7 +559,7 @@ export class Parser {
             const op = this.advance();
             const base = this.parseUnaryExpression();
 
-            return { kind: "UnaryExpression", operator: op.tag, base, start: op.start, end: base.end } as UnaryExpression;
+            return ASTFactory.createUnaryExpression(op.tag, base, op.start, base.end);
         }
         return this.parsePrimaryExpression();
     }
@@ -715,31 +602,23 @@ export class Parser {
     }
     private parseIdentifierOrFunctionCall(): Expression {
         const id = this.advance();
-        const identifier: Identifier = {
-            kind: "Identifier",
-            name: id.value,
-            start: id.start,
-            end: id.end
-        };
+        const identifier = ASTFactory.createIdentifier(id);
         if (this.check(Tag.LRP)) {
             return this.parseFunctionCall(identifier);
         }
         return identifier;
     }
     private parseNumberLiteral(): NumberNode {
-        const literal = this.advance();
-        return { kind: "Number", value: Number(literal.value), start: literal.start, end: literal.end };
+        return ASTFactory.createNumberNode(this.advance());
     }
     private parseStringLiteral(): StringNode {
-        const literal = this.advance();
-        return { kind: "String", value: String(literal.value), start: literal.start, end: literal.end };
+        return ASTFactory.createStringNode(this.advance());
     }
     private parseBooleanLiteral(): BooleanNode {
-        const literal = this.advance();
-        return { kind: "Boolean", value: literal.value === "true", start: literal.start, end: literal.end };
+        return ASTFactory.createBooleanNode(this.advance());
     }
     private parseFString(): FString {
-        const string: FString = { kind: "F-String", value: [], start: this.previous().start, end: null };
+        const string: FString = ASTFactory.createFString([], this.previous().start, null); // '
         while (!this.match(Tag.QUOTE)) {
             if (this.match(Tag.LCP)) {
                 string.value.push(this.parseExpression());
@@ -763,7 +642,7 @@ export class Parser {
             this.expect(Tag.RSP);
         }
         
-        return { kind: "Array", elements, start, end: this.previous().end }; // ]
+        return ASTFactory.createArrayNode(elements, start, this.previous().end); // ]
     }
     private parseParenthesizeExpression(): Expression {
         const expr = this.parseExpression();
@@ -781,12 +660,7 @@ export class Parser {
         return this.parseReturnStatement(token.start);
     }
     private parsePrintStatement(start: Location): PrintStatement {
-        const statement: PrintStatement = {
-            kind: "PrintStatement",
-            arguments: [],
-            start,
-            end: null,
-        };
+        const statement = ASTFactory.createPrintStatement([], start, null);
         this.expect(Tag.LRP);
         if (!this.match(Tag.RRP)) {
             do {
@@ -799,12 +673,7 @@ export class Parser {
     }
     private parseReadStatement(start: Location): ReadStatement {
         // TODO: declaration inside read statement?
-        const statement: ReadStatement = {
-            kind: "ReadStatement",
-            arguments: [],
-            start,
-            end: null,
-        };
+        const statement = ASTFactory.createReadStatement([], start, null);
         this.match(Tag.LRP);
         do {
             const expr = this.parseExpression();
@@ -815,12 +684,7 @@ export class Parser {
         return statement;
     }
     private parseReturnStatement(start: Location): ReturnStatement {
-        const statement: ReturnStatement = {
-            kind: "ReturnStatement",
-            values: [],
-            start,
-            end: null,
-        };
+        const statement = ASTFactory.createReturnStatement([], start, null);
         this.match(Tag.LRP);
         if (!this.match(Tag.RRP)) {
             do {
@@ -847,31 +711,18 @@ export class Parser {
     // }
     private parseIfStatement(): IfStatement {
         const start = this.previous().start; // IF
-        return {
-            kind: "IfStatement",
-            condition: this.parseCondition(),
-            body: this.parseBlock(),
-            elseBody: this.match(Tag.ELSE) ? this.parseBlock() : [],
-            start,
-            end: this.previous().end,
-        }
+        return ASTFactory.createIfStatement(this.parseCondition(), this.parseBlock(), this.match(Tag.ELSE) ? this.parseBlock() : [], start, this.previous().end);
     }
     private parseWhileStatement(): WhileStatement {
         const start = this.previous().start; // WHILE
-        return {
-            kind: "WhileStatement",
-            condition: this.parseCondition(),
-            body: this.parseBlock(),
-            start,
-            end: this.previous().end,
-        }
+        return ASTFactory.createWhileStatement(this.parseCondition(), this.parseBlock(), start, this.previous().end);
     }
     private parseForStatement(): ForStatement {
         const start = this.previous().start; // FOR
         this.expect(Tag.LRP);
         
         const id = this.expect(Tag.ID, "Expected iterator");
-        const iterator : Identifier = { kind: "Identifier", name: id.value, start: id.start, end: id.end };
+        const iterator : Identifier = ASTFactory.createIdentifier(id);
         this.expect(Tag.COMMA);
 
         const limit = this.parseExpression();
@@ -879,18 +730,11 @@ export class Parser {
 
         const body = this.parseBlock();
 
-        return { kind: "ForStatement", iterator, limit, body, start, end: this.previous().end }; // }
+        return ASTFactory.createForStatement(iterator, limit, body, start, this.previous().end); // }
     }
     private parseSwitchStatement(): SwitchStatement {
         const start = this.previous().start; // SWITCH
-        const statement: SwitchStatement = {
-            kind: "SwitchStatement",
-            expression: this.parseExpression(),
-            cases: [],
-            default: [],
-            start,
-            end: null,
-        };
+        const statement = ASTFactory.createSwitchStatement(this.parseExpression(), [], [], start, null);
 
         this.expect(Tag.LCP);
         if (this.match(Tag.RCP)) {
@@ -905,7 +749,7 @@ export class Parser {
                 values.push(this.parseExpression());
             } while (this.match(Tag.COMMA));
             const body = this.parseBlock();
-            statement.cases.push({ kind: "CaseStatement", values, body, start: case_start, end: this.previous().end }); // }
+            statement.cases.push(ASTFactory.createCaseStatement(values, body, case_start, this.previous().end)); // }
         }
 
         while (!this.match(Tag.RCP)) {
@@ -934,19 +778,8 @@ export class Parser {
     private parseClassDeclaration(): ClassDeclaration {
         const start = this.previous().start; // CLASS
         const id = this.expect(Tag.ID, "Expected class name");
-        const identifier: Identifier = {
-            kind: "Identifier",
-            name: id.value,
-            start: id.start,
-            end: id.end
-        };
-        const declaration: ClassDeclaration = {
-            kind: "ClassDeclaration",
-            identifier,
-            body: [],
-            start,
-            end: null,
-        };
+        const identifier = ASTFactory.createIdentifier(id);
+        const declaration: ClassDeclaration = ASTFactory.createClassDeclaration(identifier, [], start, null);
 
         this.expect(Tag.ASSIGN);
         declaration.body = this.parseBlock();
