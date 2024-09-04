@@ -63,3 +63,7 @@ export interface Token {
     start: Location;
     end: Location;
 }
+
+export function createToken(tag: Tag, value: string, start: Location, end: Location): Token {
+    return { tag, value, start, end };
+}

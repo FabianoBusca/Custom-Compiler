@@ -57,6 +57,29 @@ export function parserTest(source_path: string, expected: Program, errors?: DayE
     expect(ast).toEqual(expected);
 }
 
+export function parserTestt(source: string, tokens: Token[], expected: Program, errors?: DayErr[]) {
+    const parser = new Parser(tokens, source);
+    parser.parse();
+
+    const parserErrors = parser.getErrors();
+    if (errors) {
+        expect(parserErrors.length).toEqual(errors.length);
+        for (let i = 0; i < errors.length; i++) {
+            expect(parserErrors[i].message).toEqual(errors[i].message);
+            expect(parserErrors[i].kind).toEqual(errors[i].kind);
+            expect(parserErrors[i].line).toEqual(errors[i].line);
+            expect(parserErrors[i].start).toEqual(errors[i].start);
+            expect(parserErrors[i].end).toEqual(errors[i].end);
+            expect(parserErrors[i].sourceLine).toEqual(errors[i].sourceLine);
+        }
+    } else {
+        expect(parserErrors.length).toEqual(0);
+    }
+
+    const ast = parser.getAST();
+    expect(ast).toEqual(expected);
+}
+
 // export function parserTest(source: string, expected: string) {
 //     const lexer = new Lexer(source);
 //     lexer.tokenize();
