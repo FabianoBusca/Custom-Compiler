@@ -1,15 +1,16 @@
 import {SymbolTable} from "./symbolTable";
+import {Type} from "./ast";
 
 export interface VariableEntry {
-    type: string;
+  type: Type;
 }
 
 export interface FunctionEntry {
-    returnTypes: string[];
-    parameters: { type: string, name: string }[];
-    scope: SymbolTable;
+  returnTypes: Type[];
+  parameters: { type: Type, name: string }[];
+  scope: SymbolTable;
 }
 
 export interface ClassEntry {
-    scope: SymbolTable;
+  scope: SymbolTable;
 }
