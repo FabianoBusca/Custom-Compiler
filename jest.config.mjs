@@ -5,5 +5,9 @@ export default {
         'ts-jest': {
             diagnostics: false
         }
+    },
+    moduleNameMapper: {
+        '^@src/(.*)$': '<rootDir>/src/$1',
+        '^@tests/(.*)$': '<rootDir>/tests/$1'
     }
 };

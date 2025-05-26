@@ -1,0 +1,17 @@
+num x
+str s = "Hello, World!"
+bool isShining = true
+str f = 'The sun is shining?: {isShining}'
+num[][] matrix = [[1, 2, 3], [4, 5, 6]]
+
+num a, num b str[] c = 1, 2, ["three", "four"]
+num d, num e = 0
+
+num, num = foo(){}
+num f, num g, str h = foo(), "hello"
+_, num i = foo()
+# The following line is invalid. You cannot access a function return type with array notation
+# num i = foo[1]
+# But you can use it if the function returns an array
+num[] = bar(){}
+num l = bar()[0]

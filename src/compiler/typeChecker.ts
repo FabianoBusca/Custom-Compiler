@@ -1,6 +1,7 @@
 import {
     ArrayElement,
     ArrayNode,
+    ASTNode,
     ClassDeclaration,
     Expression,
     FString,
@@ -9,15 +10,16 @@ import {
     Identifier,
     MemberAttribute,
     MemberFunctionCall,
-    Program, ReadStatement,
+    Program,
+    ReadStatement,
     ReturnStatement,
     Statement,
     SymbolTable,
     VariableAssignment,
     VariableDeclaration,
     VariableOperations
-} from "../data";
-import {DayError} from "../utils";
+} from "@src/data";
+import {DayErr} from "@src/utils";
 import assert from "assert";
 
 const EMPTY = '$_empty_$';
@@ -26,10 +28,13 @@ const ANY = '$_any_$';
 type Type = string;
 
 export class TypeChecker {
-    private symbolTable: SymbolTable;
+    private readonly errors: DayErr[] = [];
 
-    constructor(private readonly ast: Program, symbolTable: SymbolTable) {
-        this.symbolTable = symbolTable;
+    constructor(
+        private readonly ast: Program,
+        private readonly symbolTable: SymbolTable,
+        private readonly source: string,
+    ) {
     }
 
     check() {
@@ -44,8 +49,18 @@ export class TypeChecker {
         return expected === ANY;
     }
 
-    private throwError(message: string): never {
-        throw DayError.semanticError(message);
+    private throwError(message: string, node: ASTNode): never {
+        const error = new DayErr(
+            message,
+            "Semantic Error",
+            node.start.line,
+            node.end.column,
+            node.end.column + 1,
+            this.source.split("\n")[node.start.line - 1],
+        );
+        this.errors.push(error);
+        // TODO shouldn't be thrown here
+        throw error;
     }
 
     private visitProgram(program: Program) {
@@ -70,7 +85,7 @@ export class TypeChecker {
                 this.visitReadStatement(statement as ReadStatement);
                 break;
             default:
-                this.throwError(`Unknown statement type: ${statement.kind}`);
+                throw Error(`Unknown statement type: ${statement.kind}`);
         }
     }
 
@@ -94,7 +109,7 @@ export class TypeChecker {
         node.operations.forEach(operation => {
             const operationType = this.getOperationType(operation);
             if (!this.compareTypes(valueType, operationType)) {
-                this.throwError(`Type mismatch: cannot assign a value of type '${valueType}' to a variable of type '${operationType}'. ${(operation as VariableDeclaration).identifier.name});'`);
+                this.throwError(`Type mismatch: cannot assign a value of type '${valueType}' to a variable of type '${operationType}'. ${(operation as VariableDeclaration).identifier.name});'`, (operation as VariableDeclaration).identifier);
             }
         });
     }
@@ -204,14 +219,22 @@ export class TypeChecker {
 
     private visitSimpleExpression(node: Expression): Type {
         switch (node.kind) {
-            case 'Number': return 'num';
-            case 'String': return 'str';
-            case 'Boolean': return 'bool';
-            case 'F-String': return this.visitFString(node as FString);
-            case 'Array': return this.visitArray(node as ArrayNode);
-            case 'Identifier': return this.visitIdentifier(node as Identifier);
-            case 'MemberAttribute': return this.visitMemberAttribute(node as MemberAttribute);
-            default: return this.throwError(`Unknown expression type: ${node.kind}`);
+            case 'Number':
+                return 'num';
+            case 'String':
+                return 'str';
+            case 'Boolean':
+                return 'bool';
+            case 'F-String':
+                return this.visitFString(node as FString);
+            case 'Array':
+                return this.visitArray(node as ArrayNode);
+            case 'Identifier':
+                return this.visitIdentifier(node as Identifier);
+            case 'MemberAttribute':
+                return this.visitMemberAttribute(node as MemberAttribute);
+            default:
+                return this.throwError(`Unknown expression type: ${node.kind}`);
         }
     }
 

@@ -1,7 +1,7 @@
 // TODO check and complete
 <program> ::= <statement>*
 
-<statement> ::= <declaration> | <expression> | 
+<statement> ::= <declaration> | <expression>
 
 <declaration> ::= <variable_declaration_assignment> | <function_declaration>
 

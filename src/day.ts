@@ -3,6 +3,7 @@ import * as path from "path";
 import {Lexer, Parser, SymbolTableBuilder, TypeChecker} from "./compiler";
 
 const scriptsPath = './tests';
+
 function compile(source: string, flag: string) {
     let errors;
     source = source.replace('\n\r', '\n');
@@ -41,8 +42,17 @@ function compile(source: string, flag: string) {
         return;
     }
 
-    const symbolTableBuilder = new SymbolTableBuilder(ast);
-    const symbolTable = symbolTableBuilder.build();
+    const symbolTableBuilder = new SymbolTableBuilder(ast, source);
+    symbolTableBuilder.build()
+    errors = symbolTableBuilder.getErrors();
+    if (errors.length > 0) {
+        errors.forEach(error => {
+            console.error(error.toString());
+        });
+        return;
+    }
+
+    const symbolTable = symbolTableBuilder.getSymbolTable();
 
     if (flag === '-S') {
         console.log(symbolTable.toString())

@@ -1,74 +1,75 @@
-import {lexerTest} from "../utils";
+import {lexerTest} from "@tests/utils";
+import {createToken} from "@src/data";
 
 describe("Tags", () => {
-  
-  test("symbols", () => {
-    const source = `+ - * / % ** -- += -= & | ! == != > < >= <= = ( ) [ ] { } , .`;
-    
-    const expected = [
-      {tag: 1, value: '+', start: {line: 1, column: 1}, end: {line: 1, column: 2}},
-      {tag: 2, value: '-', start: {line: 1, column: 3}, end: {line: 1, column: 4}},
-      {tag: 3, value: '*', start: {line: 1, column: 5}, end: {line: 1, column: 6}},
-      {tag: 4, value: '/', start: {line: 1, column: 7}, end: {line: 1, column: 8}},
-      {tag: 5, value: '%', start: {line: 1, column: 9}, end: {line: 1, column: 10}},
-      {tag: 6, value: '**', start: {line: 1, column: 11}, end: {line: 1, column: 13}},
-      {tag: 9, value: '--', start: {line: 1, column: 14}, end: {line: 1, column: 16}},
-      {tag: 10, value: '+=', start: {line: 1, column: 17}, end: {line: 1, column: 19}},
-      {tag: 11, value: '-=', start: {line: 1, column: 20}, end: {line: 1, column: 22}},
-      {tag: 12, value: '&', start: {line: 1, column: 23}, end: {line: 1, column: 24}},
-      {tag: 13, value: '|', start: {line: 1, column: 25}, end: {line: 1, column: 26}},
-      {tag: 14, value: '!', start: {line: 1, column: 27}, end: {line: 1, column: 28}},
-      {tag: 15, value: '==', start: {line: 1, column: 29}, end: {line: 1, column: 31}},
-      {tag: 16, value: '!=', start: {line: 1, column: 32}, end: {line: 1, column: 34}},
-      {tag: 17, value: '>', start: {line: 1, column: 35}, end: {line: 1, column: 36}},
-      {tag: 18, value: '<', start: {line: 1, column: 37}, end: {line: 1, column: 38}},
-      {tag: 19, value: '>=', start: {line: 1, column: 39}, end: {line: 1, column: 41}},
-      {tag: 20, value: '<=', start: {line: 1, column: 42}, end: {line: 1, column: 44}},
-      {tag: 21, value: '=', start: {line: 1, column: 45}, end: {line: 1, column: 46}},
-      {tag: 22, value: '(', start: {line: 1, column: 47}, end: {line: 1, column: 48}},
-      {tag: 23, value: ')', start: {line: 1, column: 49}, end: {line: 1, column: 50}},
-      {tag: 24, value: '[', start: {line: 1, column: 51}, end: {line: 1, column: 52}},
-      {tag: 25, value: ']', start: {line: 1, column: 53}, end: {line: 1, column: 54}},
-      {tag: 26, value: '{', start: {line: 1, column: 55}, end: {line: 1, column: 56}},
-      {tag: 27, value: '}', start: {line: 1, column: 57}, end: {line: 1, column: 58}},
-      {tag: 28, value: ',', start: {line: 1, column: 59}, end: {line: 1, column: 60}},
-      {tag: 29, value: '.', start: {line: 1, column: 61}, end: {line: 1, column: 62}},
-      {tag: 0, value: '', start: {line: 1, column: 62}, end: {line: 1, column: 62}}
-    ];
-    
-    lexerTest(source, expected);
-  });
-  
-  test("keywords", () => {
-    const source = `num str bool randomIdentifier 7 "text" if else while for return switch case break default class this true false print read null _`;
-    
-    const expected = [
-      {tag: 31, value: 'num', start: {line: 1, column: 1}, end: {line: 1, column: 4}},
-      {tag: 32, value: 'str', start: {line: 1, column: 5}, end: {line: 1, column: 8}},
-      {tag: 33, value: 'bool', start: {line: 1, column: 9}, end: {line: 1, column: 13}},
-      {tag: 34, value: 'randomIdentifier', start: {line: 1, column: 14}, end: {line: 1, column: 30}},
-      {tag: 35, value: '7', start: {line: 1, column: 31}, end: {line: 1, column: 32}},
-      {tag: 36, value: 'text', start: {line: 1, column: 33}, end: {line: 1, column: 39}},
-      {tag: 37, value: 'if', start: {line: 1, column: 40}, end: {line: 1, column: 42}},
-      {tag: 38, value: 'else', start: {line: 1, column: 43}, end: {line: 1, column: 47}},
-      {tag: 39, value: 'while', start: {line: 1, column: 48}, end: {line: 1, column: 53}},
-      {tag: 40, value: 'for', start: {line: 1, column: 54}, end: {line: 1, column: 57}},
-      {tag: 41, value: 'return', start: {line: 1, column: 58}, end: {line: 1, column: 64}},
-      {tag: 42, value: 'switch', start: {line: 1, column: 65}, end: {line: 1, column: 71}},
-      {tag: 43, value: 'case', start: {line: 1, column: 72}, end: {line: 1, column: 76}},
-      {tag: 44, value: 'break', start: {line: 1, column: 77}, end: {line: 1, column: 82}},
-      {tag: 45, value: 'default', start: {line: 1, column: 83}, end: {line: 1, column: 90}},
-      {tag: 46, value: 'class', start: {line: 1, column: 91}, end: {line: 1, column: 96}},
-      {tag: 47, value: 'this', start: {line: 1, column: 97}, end: {line: 1, column: 101}},
-      {tag: 48, value: 'true', start: {line: 1, column: 102}, end: {line: 1, column: 106}},
-      {tag: 49, value: 'false', start: {line: 1, column: 107}, end: {line: 1, column: 112}},
-      {tag: 50, value: 'print', start: {line: 1, column: 113}, end: {line: 1, column: 118}},
-      {tag: 51, value: 'read', start: {line: 1, column: 119}, end: {line: 1, column: 123}},
-      {tag: 52, value: 'null', start: {line: 1, column: 124}, end: {line: 1, column: 128}},
-      {tag: 53, value: '_', start: {line: 1, column: 129}, end: {line: 1, column: 130}},
-      {tag: 0, value: '', start: {line: 1, column: 130}, end: {line: 1, column: 130}}
-    ];
-    
-    lexerTest(source, expected);
-  });
+
+    test("symbols", () => {
+        const source = `+ - * / % ** -- += -= & | ! == != > < >= <= = ( ) [ ] { } , .`;
+
+        const expected = [
+            createToken(1, '+', {line: 1, column: 1}, {line: 1, column: 2}),
+            createToken(2, '-', {line: 1, column: 3}, {line: 1, column: 4}),
+            createToken(3, '*', {line: 1, column: 5}, {line: 1, column: 6}),
+            createToken(4, '/', {line: 1, column: 7}, {line: 1, column: 8}),
+            createToken(5, '%', {line: 1, column: 9}, {line: 1, column: 10}),
+            createToken(6, '**', {line: 1, column: 11}, {line: 1, column: 13}),
+            createToken(9, '--', {line: 1, column: 14}, {line: 1, column: 16}),
+            createToken(10, '+=', {line: 1, column: 17}, {line: 1, column: 19}),
+            createToken(11, '-=', {line: 1, column: 20}, {line: 1, column: 22}),
+            createToken(12, '&', {line: 1, column: 23}, {line: 1, column: 24}),
+            createToken(13, '|', {line: 1, column: 25}, {line: 1, column: 26}),
+            createToken(14, '!', {line: 1, column: 27}, {line: 1, column: 28}),
+            createToken(15, '==', {line: 1, column: 29}, {line: 1, column: 31}),
+            createToken(16, '!=', {line: 1, column: 32}, {line: 1, column: 34}),
+            createToken(17, '>', {line: 1, column: 35}, {line: 1, column: 36}),
+            createToken(18, '<', {line: 1, column: 37}, {line: 1, column: 38}),
+            createToken(19, '>=', {line: 1, column: 39}, {line: 1, column: 41}),
+            createToken(20, '<=', {line: 1, column: 42}, {line: 1, column: 44}),
+            createToken(21, '=', {line: 1, column: 45}, {line: 1, column: 46}),
+            createToken(22, '(', {line: 1, column: 47}, {line: 1, column: 48}),
+            createToken(23, ')', {line: 1, column: 49}, {line: 1, column: 50}),
+            createToken(24, '[', {line: 1, column: 51}, {line: 1, column: 52}),
+            createToken(25, ']', {line: 1, column: 53}, {line: 1, column: 54}),
+            createToken(26, '{', {line: 1, column: 55}, {line: 1, column: 56}),
+            createToken(27, '}', {line: 1, column: 57}, {line: 1, column: 58}),
+            createToken(28, ',', {line: 1, column: 59}, {line: 1, column: 60}),
+            createToken(29, '.', {line: 1, column: 61}, {line: 1, column: 62}),
+            createToken(0, '', {line: 1, column: 62}, {line: 1, column: 62})
+        ];
+
+        lexerTest(source, expected);
+    });
+
+    test("keywords", () => {
+        const source = `num str bool randomIdentifier 7 "text" if else while for return switch case break default class this true false print read null _`;
+
+        const expected = [
+            createToken(31, 'num', {line: 1, column: 1}, {line: 1, column: 4}),
+            createToken(32, 'str', {line: 1, column: 5}, {line: 1, column: 8}),
+            createToken(33, 'bool', {line: 1, column: 9}, {line: 1, column: 13}),
+            createToken(34, 'randomIdentifier', {line: 1, column: 14}, {line: 1, column: 30}),
+            createToken(35, '7', {line: 1, column: 31}, {line: 1, column: 32}),
+            createToken(36, 'text', {line: 1, column: 33}, {line: 1, column: 39}),
+            createToken(37, 'if', {line: 1, column: 40}, {line: 1, column: 42}),
+            createToken(38, 'else', {line: 1, column: 43}, {line: 1, column: 47}),
+            createToken(39, 'while', {line: 1, column: 48}, {line: 1, column: 53}),
+            createToken(40, 'for', {line: 1, column: 54}, {line: 1, column: 57}),
+            createToken(41, 'return', {line: 1, column: 58}, {line: 1, column: 64}),
+            createToken(42, 'switch', {line: 1, column: 65}, {line: 1, column: 71}),
+            createToken(43, 'case', {line: 1, column: 72}, {line: 1, column: 76}),
+            createToken(44, 'break', {line: 1, column: 77}, {line: 1, column: 82}),
+            createToken(45, 'default', {line: 1, column: 83}, {line: 1, column: 90}),
+            createToken(46, 'class', {line: 1, column: 91}, {line: 1, column: 96}),
+            createToken(47, 'this', {line: 1, column: 97}, {line: 1, column: 101}),
+            createToken(48, 'true', {line: 1, column: 102}, {line: 1, column: 106}),
+            createToken(49, 'false', {line: 1, column: 107}, {line: 1, column: 112}),
+            createToken(50, 'print', {line: 1, column: 113}, {line: 1, column: 118}),
+            createToken(51, 'read', {line: 1, column: 119}, {line: 1, column: 123}),
+            createToken(52, 'null', {line: 1, column: 124}, {line: 1, column: 128}),
+            createToken(53, '_', {line: 1, column: 129}, {line: 1, column: 130}),
+            createToken(0, '', {line: 1, column: 130}, {line: 1, column: 130})
+        ];
+
+        lexerTest(source, expected);
+    });
 });

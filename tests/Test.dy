@@ -1,1 +1,5 @@
-class Dog = {}
+# This is a comment
+<< This is a multi
+    line comment >>
+
+4
