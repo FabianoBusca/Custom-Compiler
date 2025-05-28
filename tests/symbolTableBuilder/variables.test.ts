@@ -13,7 +13,7 @@ describe("Variables", () => {
     });
 
     test("Variable declaration - 2", () => {
-        const source = "str s = 'hello {x}'";
+        const source = "str s = 'hello {5}'";
 
         const symbolTable = new SymbolTable();
         symbolTable.addVariable("s", ASTFactory.createType("str", 0, {line: 1, column: 1}, {line: 1, column: 3}));
@@ -38,6 +38,26 @@ describe("Variables", () => {
         const symbolTable = new SymbolTable();
         symbolTable.addClass("Dog", new SymbolTable());
         symbolTable.addVariable("d", ASTFactory.createType("Dog", 0, {line: 2, column: 1}, {line: 2, column: 3}));
+
+        symbolTableBuilderTest(source, symbolTable);
+    });
+
+    test("Variable declaration - 5", () => {
+        const source =
+            "num = foo(str s) {}\n" +
+            "num x = foo()";
+
+        let symbolTable = new SymbolTable();
+        const newScope = symbolTable.createChildScope();
+        symbolTable.addFunction("foo", [ASTFactory.createType("num", 0, {line: 1, column: 1}, {
+            line: 1,
+            column: 3
+        })], [{
+            name: "s",
+            type: ASTFactory.createType("str", 0, {line: 1, column: 5}, {line: 1, column: 7})
+        }], newScope);
+        newScope.addVariable("s", ASTFactory.createType("str", 0, {line: 1, column: 5}, {line: 1, column: 7}));
+        symbolTable.addVariable("x", ASTFactory.createType("num", 0, {line: 2, column: 1}, {line: 2, column: 3}));
 
         symbolTableBuilderTest(source, symbolTable);
     });

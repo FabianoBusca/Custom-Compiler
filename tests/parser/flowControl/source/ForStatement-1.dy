@@ -1,3 +1,0 @@
-for (i, x.length) {
-  print(x[i])
-}

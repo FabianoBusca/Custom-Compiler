@@ -1,6 +1,6 @@
 import {ClassEntry, FunctionEntry, Type, VariableEntry} from "@src/data";
 
-const BUILT_IN_TYPES = ["num", "str", "bool", "_"];
+const BUILT_IN_TYPES = ["num", "str", "bool", "_", "unknown"];
 
 export class SymbolTable {
     private readonly variableTable = new Map<string, VariableEntry>();
@@ -42,6 +42,17 @@ export class SymbolTable {
             return this.parent.variableLookup(name);
         }
         return null;
+    }
+
+    public variableUpdate(name: string, type: Type): boolean {
+        if (this.variableTable.has(name)) {
+            const entry = this.variableTable.get(name);
+            if (entry && this.isValidType(type)) {
+                entry.type = type;
+                return true;
+            }
+        }
+        return false;
     }
 
     public functionLookup(name: string): FunctionEntry | null {

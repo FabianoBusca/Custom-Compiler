@@ -6,7 +6,7 @@ describe("Functions", () => {
     test("Function declaration - 1", () => {
         const source = "_ = bark(){}";
 
-        let symbolTable = new SymbolTable();
+        const symbolTable = new SymbolTable();
         const new_scope = symbolTable.createChildScope();
         symbolTable.addFunction("bark", [], [], new_scope);
 
@@ -16,7 +16,7 @@ describe("Functions", () => {
     test("Function declaration - 2", () => {
         const source = "str, num = bark(num x, str y){}";
 
-        let symbolTable = new SymbolTable();
+        const symbolTable = new SymbolTable();
         const new_scope = symbolTable.createChildScope();
         symbolTable.addFunction("bark", [
             ASTFactory.createType("str", 0, {line: 1, column: 1}, {line: 1, column: 4}),
@@ -41,7 +41,7 @@ describe("Functions", () => {
         const source = "class Dog = {}\n" +
             "Dog = _(bool b){}";
 
-        let symbolTable = new SymbolTable();
+        const symbolTable = new SymbolTable();
         const new_scope = symbolTable.createChildScope();
         symbolTable.addClass("Dog", new SymbolTable());
         symbolTable.addFunction("_", [ASTFactory.createType("Dog", 0, {line: 2, column: 1}, {

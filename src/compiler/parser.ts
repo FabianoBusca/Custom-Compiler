@@ -185,6 +185,7 @@ export class Parser {
         return Math.max(0, Math.min(index, this.tokens.length - 1));
     }
 
+    // todo not use token_index
     private throwError(message: string, token_index?: number): never {
         if (!token_index) token_index = this.index;
         else token_index = this.clamp(token_index);
@@ -402,21 +403,47 @@ export class Parser {
             operations[operations.length - 1].end,
         );
 
-        // check if it is a declaration or an assignment
-        if (this.check(Tag.ASSIGN, Tag.SELF_INC, Tag.SELF_DEC)) {
-            declarations.operator = this.advance().tag;
-            do {
-                declarations.values.push(this.parseExpression());
-            } while (this.match(Tag.COMMA));
-            declarations.end =
-                declarations.values[declarations.values.length - 1].end;
-        } else {
+        // // check if it is a declaration or an assignment
+        // if (this.check(Tag.ASSIGN, Tag.SELF_INC, Tag.SELF_DEC)) {
+        //     declarations.operator = this.advance().tag;
+        //     do {
+        //         declarations.values.push(this.parseExpression());
+        //     } while (this.match(Tag.COMMA));
+        //     declarations.end = declarations.values[declarations.values.length - 1].end;
+        // } else {
+        //     // if it is a declaration it can't have any assignment inside
+        //     if (
+        //         declarations.operations.some((op) => op.kind === "VariableAssignment")
+        //     ) {
+        //         this.throwError("Variable declaration cannot have assignments");
+        //     }
+        // }
+
+        if (!this.check(Tag.ASSIGN, Tag.SELF_INC, Tag.SELF_DEC)) {
             // if it is a declaration it can't have any assignment inside
             if (
                 declarations.operations.some((op) => op.kind === "VariableAssignment")
             ) {
                 this.throwError("Variable declaration cannot have assignments");
             }
+        } else {
+            if (this.check(Tag.SELF_INC, Tag.SELF_DEC)) {
+                for (let i = 0; i < declarations.operations.length; i++) {
+                    const op = declarations.operations[i];
+                    // console.log(op)
+                    if (op.kind === "VariableDeclaration") {
+                        this.throwError(
+                            "Cannot self increment or decrement a variable declaration",
+                            this.index - declarations.operations.length + i,
+                        );
+                    }
+                }
+            }
+            declarations.operator = this.advance().tag;
+            do {
+                declarations.values.push(this.parseExpression());
+            } while (this.match(Tag.COMMA));
+            declarations.end = declarations.values[declarations.values.length - 1].end;
         }
 
         return declarations;
@@ -480,6 +507,15 @@ export class Parser {
 
     private parseFunctionDeclaration(types: Type[]): FunctionDeclaration {
         types = types.concat(this.parseReturnTypes());
+        if (types.length > 1) {
+            for (const type of types) {
+                if (type.name === "_") {
+                    this.throwError(
+                        "Void function cannot have multiple return types",
+                    );
+                }
+            }
+        }
         const declaration = ASTFactory.createFunctionDeclaration(
             types,
             null as unknown as Identifier,
@@ -851,10 +887,10 @@ export class Parser {
         ); // '
         while (!this.match(Tag.QUOTE)) {
             if (this.match(Tag.LCP)) {
-                string.value.push(this.parseExpression());
+                string.expressions.push(this.parseExpression());
                 this.expect(Tag.RCP);
             } else if (this.check(Tag.TEXT)) {
-                string.value.push(this.parseStringLiteral());
+                string.expressions.push(this.parseStringLiteral());
             } else {
                 this.throwError("Unexpected token");
             }

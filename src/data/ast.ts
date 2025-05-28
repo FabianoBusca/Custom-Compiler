@@ -172,8 +172,8 @@ export interface LogicalExpression extends Expression {
 
 export interface BinaryExpression extends Expression {
     kind: "BinaryExpression";
-    left: Expression;
     operator: Tag;
+    left: Expression;
     right: Expression;
 }
 
@@ -194,7 +194,7 @@ export interface BooleanNode extends Expression {
 
 export interface FString extends Expression {
     kind: "F-String";
-    value: Expression[];
+    expressions: Expression[];
 }
 
 export interface ArrayNode extends Expression {

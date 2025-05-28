@@ -1,10 +1,17 @@
 import {
+    ArrayElement,
+    ArrayNode,
     ASTNode,
+    BinaryExpression,
     ClassDeclaration,
     ForStatement,
+    FString,
     FunctionCall,
     FunctionDeclaration,
+    Identifier,
     IfStatement,
+    LogicalExpression,
+    MemberAttribute,
     MemberFunctionCall,
     PrintStatement,
     Program,
@@ -16,9 +23,8 @@ import {
     VariableOperations,
     WhileStatement
 } from "@src/data";
-import {DayErr} from "@src/utils";
+import {ASTFactory, DayErr, Location} from "@src/utils";
 
-// todo: check for usage of undefined variables, functions, classes
 export class SymbolTableBuilder {
     private scope: SymbolTable = new SymbolTable();
     private readonly errors: DayErr[] = [];
@@ -87,6 +93,8 @@ export class SymbolTableBuilder {
                 return this.visitMemberFunctionCall(node as MemberFunctionCall);
             case 'UnaryExpression':
                 return this.visitUnaryExpression(node as UnaryExpression);
+            default:
+                this.throwError(`Unexpected statement type '${node.kind}'`, node);
         }
     }
 
@@ -138,7 +146,6 @@ export class SymbolTableBuilder {
         this.scope = parent;
     }
 
-    // todo create scope
     private visitIfStatement(node: IfStatement) {
         this.visitExpression(node.condition);
 
@@ -153,11 +160,23 @@ export class SymbolTableBuilder {
     }
 
     private visitForStatement(node: ForStatement) {
-
-
+        if (!this.scope.variableLookup(node.iterator.name)) {
+            this.scope.addVariable(node.iterator.name, ASTFactory.createType("unknown", 0, null as unknown as Location, null as unknown as Location));
+        }
         this.visitExpression(node.limit);
 
         node.body.forEach(statement => this.visitNode(statement));
+    }
+
+    private visitSwitchStatement(node: SwitchStatement) {
+        this.visitExpression(node.expression);
+
+        node.cases.forEach(caseStatement => {
+            caseStatement.values.forEach(expr => this.visitExpression(expr));
+            caseStatement.body.forEach(statement => this.visitNode(statement));
+        });
+
+        node.default?.forEach(statement => this.visitNode(statement));
     }
 
     private visitReturnStatement(node: ReturnStatement) {
@@ -168,13 +187,75 @@ export class SymbolTableBuilder {
         node.arguments.forEach(expr => this.visitExpression(expr));
     }
 
-    //  todo
-    private visitExpression(node: ASTNode): void {
+    private visitFunctionCall(node: FunctionCall): void {
+        if (!this.scope.functionLookup(node.identifier.name)) this.throwError(`Function '${node.identifier.name}' is not declared.`, node.identifier);
 
+        node.arguments.forEach((arg) => this.visitExpression(arg));
+    }
+
+    private visitMemberFunctionCall(node: MemberFunctionCall): void {
+        this.visitExpression(node.member)
+        this.visitFunctionCall(node.function)
+    }
+
+    private visitExpression(node: ASTNode): void {
+        switch (node.kind) {
+            case "FunctionCall":
+                return this.visitFunctionCall(node as FunctionCall);
+            case "Identifier":
+                return this.visitIdentifier(node as Identifier);
+            case "MemberFunctionCall":
+                return this.visitMemberFunctionCall(node as MemberFunctionCall);
+            case "MemberAttribute":
+                return this.visitMemberAttribute(node as MemberAttribute);
+            case "UnaryExpression":
+                return this.visitUnaryExpression(node as UnaryExpression);
+            case "LogicalExpression":
+            case "BinaryExpression":
+                return this.visitBinaryExpression(node as LogicalExpression | BinaryExpression);
+            case "Number":
+            case "String":
+            case "Boolean":
+                break
+            case "F-String":
+                return this.visitFString(node as FString);
+            case "Array":
+                return this.visitArray(node as ArrayNode);
+            case "ArrayElement":
+                return this.visitArrayElement(node as ArrayElement);
+            default:
+                this.throwError(`Unexpected node type '${node.kind}' in expression.`, node);
+        }
+    }
+
+    private visitIdentifier(node: Identifier) {
+        if (!this.scope.variableLookup(node.name)) this.throwError(`Variable '${node.name}' is not declared.`, node);
+    }
+
+    private visitMemberAttribute(node: MemberAttribute): void {
+        this.visitExpression(node.member)
     }
 
     private visitUnaryExpression(node: UnaryExpression): void {
         this.visitExpression(node.base)
+    }
+
+    private visitBinaryExpression(node: LogicalExpression | BinaryExpression): void {
+        this.visitExpression(node.left);
+        this.visitExpression(node.right);
+    }
+
+    private visitFString(node: FString): void {
+        node.expressions.forEach(expr => this.visitExpression(expr));
+    }
+
+    private visitArray(node: ArrayNode): void {
+        node.elements.forEach(expr => this.visitExpression(expr));
+    }
+
+    private visitArrayElement(node: ArrayElement): void {
+        this.visitExpression(node.array);
+        node.indexes.forEach(idx => this.visitExpression(idx));
     }
 
     public getSymbolTable(): SymbolTable {

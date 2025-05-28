@@ -149,7 +149,7 @@ export class ASTFactory {
         start: Location,
         end: Location,
     ): FString {
-        return {kind: "F-String", value, start, end};
+        return {kind: "F-String", expressions: value, start, end};
     }
 
     static createFunctionCall(

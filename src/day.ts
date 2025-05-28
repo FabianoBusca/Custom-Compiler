@@ -59,10 +59,18 @@ function compile(source: string, flag: string) {
         return;
     }
 
-    const typeChecker = new TypeChecker(ast, symbolTable);
+    const typeChecker = new TypeChecker(ast, symbolTable, source);
     typeChecker.check();
+    errors = typeChecker.getErrors();
+    if (errors.length > 0) {
+        errors.forEach(error => {
+            console.error(error.toString());
+        });
+        return;
+    }
 
     if (flag === '-T') {
+        console.log("Type checking completed successfully.");
         return;
     }
 

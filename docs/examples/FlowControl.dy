@@ -1,0 +1,31 @@
+# For loops have an iterator and a limit.
+# If the limit is a number, the iterator will start at 0 and increment by 1 until it reaches the limit.
+# If the limit is an array, the iterator will start as the first element of the array until it reaches the end.
+
+for (i, 5) {
+    print(i)
+}
+
+x = [0, 1, 2, 3, 4]
+for (i, x) {
+    print(i)
+}
+
+# Note that the iterator is declared as a new variable if not previously declared.
+# If previously declared, it will be overwritten after being type checked.
+
+# This will throw a semantic error:
+<<
+str i
+for (i, 5) {
+    num i = 0
+    print(i)
+}
+>>
+
+# This will not throw a semantic error and i will be overwritten:
+num i = 7
+for (i, 5) {
+    i = 0
+    print(i)
+}
