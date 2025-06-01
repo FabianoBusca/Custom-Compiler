@@ -46,7 +46,7 @@ export class TypeChecker {
 
     check() {
         try {
-            this.visitProgram(this.ast);
+            this.checkProgram(this.ast);
         } catch (error) {
             if (error instanceof DayErr) {
                 return false;
@@ -79,40 +79,40 @@ export class TypeChecker {
         return `${type.name}${"[]".repeat(type.depth)}`;
     }
 
-    private visitProgram(program: Program) {
+    private checkProgram(program: Program) {
         program.body.forEach(statement => this.checkStatement(statement));
     }
 
-    private checkStatement(statement: Statement) {
-        switch (statement.kind) {
+    private checkStatement(node: Statement) {
+        switch (node.kind) {
             case 'IfStatement':
-                return this.checkIfStatement(statement as IfStatement);
+                return this.checkIfStatement(node as IfStatement);
             case 'WhileStatement':
-                return this.checkWhileStatement(statement as WhileStatement);
+                return this.checkWhileStatement(node as WhileStatement);
             case 'ForStatement':
-                return this.checkForStatement(statement as ForStatement);
+                return this.checkForStatement(node as ForStatement);
             case 'SwitchStatement':
-                return this.checkSwitchStatement(statement as SwitchStatement);
+                return this.checkSwitchStatement(node as SwitchStatement);
             case 'FunctionDeclaration':
-                return this.checkFunctionDeclaration(statement as FunctionDeclaration);
+                return this.checkFunctionDeclaration(node as FunctionDeclaration);
             case 'ReturnStatement':
                 return
             case 'ClassDeclaration':
-                return this.checkClassDeclaration(statement as ClassDeclaration);
+                return this.checkClassDeclaration(node as ClassDeclaration);
             case 'PrintStatement':
-                return this.checkPrintStatement(statement as PrintStatement);
+                return this.checkPrintStatement(node as PrintStatement);
             case 'ReadStatement':
-                return this.checkReadStatement(statement as ReadStatement);
+                return this.checkReadStatement(node as ReadStatement);
             case 'VariableOperations':
-                return this.checkVariableOperations(statement as VariableOperations);
+                return this.checkVariableOperations(node as VariableOperations);
             case 'FunctionCall':
-                return this.checkFunctionCall(statement as FunctionCall);
+                return this.checkFunctionCall(node as FunctionCall);
             case 'MemberFunctionCall':
-                return this.checkMemberFunctionCall(statement as MemberFunctionCall);
+                return this.checkMemberFunctionCall(node as MemberFunctionCall);
             case 'UnaryExpression':
-                return this.checkUnaryExpression(statement as UnaryExpression);
+                return this.checkUnaryExpression(node as UnaryExpression);
             default:
-                throw Error(`Unknown statement type: ${statement.kind}`);
+                throw Error(`Unknown statement type: ${node.kind}`);
         }
     }
 
@@ -161,7 +161,7 @@ export class TypeChecker {
                 this.symbolTable.variableUpdate(node.iterator.name, ASTFactory.createType("num", limitTypes[0].depth - 1, node.iterator.start, node.iterator.end));
             } else {
                 if (!this.compareTypes(iteratorType.type, ASTFactory.createType(limitTypes[0].name, limitTypes[0].depth - 1, null as unknown as Location, null as unknown as Location))) {
-                    this.throwError(`Iterator '${node.iterator.name}' must be of type 'num' or an array of 'num', but got '${this.formatType(iteratorType.type)}''.`, node.iterator);
+                    this.throwError(`Iterator '${node.iterator.name}' must be of type '${limitTypes[0].name + "[]".repeat(limitTypes[0].depth - 1)}' or an array of 'num', but got '${this.formatType(iteratorType.type)}''.`, node.iterator);
                 }
             }
         }

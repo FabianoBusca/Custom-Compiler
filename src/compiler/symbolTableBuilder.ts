@@ -4,6 +4,7 @@ import {
     ASTNode,
     BinaryExpression,
     ClassDeclaration,
+    Expression,
     ForStatement,
     FString,
     FunctionCall,
@@ -17,6 +18,7 @@ import {
     Program,
     ReadStatement,
     ReturnStatement,
+    Statement,
     SwitchStatement,
     SymbolTable,
     UnaryExpression,
@@ -63,10 +65,10 @@ export class SymbolTableBuilder {
     }
 
     private visitProgram(node: Program) {
-        node.body.forEach(statement => this.visitNode(statement));
+        node.body.forEach(statement => this.visitStatement(statement));
     }
 
-    private visitNode(node: ASTNode) {
+    private visitStatement(node: Statement) {
         switch (node.kind) {
             case 'VariableOperations':
                 return this.visitVariableOperations(node as VariableOperations);
@@ -112,24 +114,23 @@ export class SymbolTableBuilder {
     }
 
     private visitFunctionDeclaration(node: FunctionDeclaration) {
-        const declaration = node;
         const newScope = this.scope.createChildScope();
-        const invalidTypes = declaration.returnTypes.filter(type => !this.scope.isValidType(type));
+        const invalidTypes = node.returnTypes.filter(type => !this.scope.isValidType(type));
         if (invalidTypes.length > 0) {
             invalidTypes.forEach(type => {
                 this.throwError(`Type '${type.name}' is not a valid type.`, type);
             });
         }
-        if (!this.scope.addFunction(declaration.identifier.name, declaration.returnTypes, declaration.parameters.map(parameter => ({
+        if (!this.scope.addFunction(node.identifier.name, node.returnTypes, node.parameters.map(parameter => ({
             type: parameter.type,
             name: parameter.identifier.name
-        })), newScope)) this.throwError(`Symbol '${declaration.identifier.name}' is already declared in the current scope.`, declaration.identifier);
+        })), newScope)) this.throwError(`Symbol '${node.identifier.name}' is already declared in the current scope.`, node.identifier);
         this.scope = newScope;
-        declaration.parameters.forEach(parameter => {
+        node.parameters.forEach(parameter => {
             if (!this.scope.isValidType(parameter.type)) this.throwError(`Type '${parameter.type.name}' is not a valid type.`, parameter.type);
             if (!this.scope.addVariable(parameter.identifier.name, parameter.type)) this.throwError(`Symbol '${parameter.identifier.name}' is already declared in the current scope.`, parameter.identifier);
         });
-        declaration.body.forEach(statement => this.visitNode(statement));
+        node.body.forEach(statement => this.visitStatement(statement));
         const parent = this.scope.getParentScope();
         if (!parent) throw Error("Internal Error: Attempted to exit global scope.");
         this.scope = parent;
@@ -140,7 +141,7 @@ export class SymbolTableBuilder {
         const newScope = this.scope.createChildScope();
         if (!this.scope.addClass(declaration.identifier.name, newScope)) this.throwError(`Symbol '${declaration.identifier.name}' is already declared in the current scope.`, declaration.identifier);
         this.scope = newScope;
-        declaration.body.forEach(statement => this.visitNode(statement));
+        declaration.body.forEach(statement => this.visitStatement(statement));
         const parent = this.scope.getParentScope();
         if (!parent) throw Error("Internal Error: Attempted to exit global scope.");
         this.scope = parent;
@@ -149,14 +150,14 @@ export class SymbolTableBuilder {
     private visitIfStatement(node: IfStatement) {
         this.visitExpression(node.condition);
 
-        node.body.forEach(statement => this.visitNode(statement));
-        node.elseBody?.forEach(statement => this.visitNode(statement));
+        node.body.forEach(statement => this.visitStatement(statement));
+        node.elseBody?.forEach(statement => this.visitStatement(statement));
     }
 
     private visitWhileStatement(node: WhileStatement) {
         this.visitExpression(node.condition);
 
-        node.body.forEach(statement => this.visitNode(statement));
+        node.body.forEach(statement => this.visitStatement(statement));
     }
 
     private visitForStatement(node: ForStatement) {
@@ -165,7 +166,7 @@ export class SymbolTableBuilder {
         }
         this.visitExpression(node.limit);
 
-        node.body.forEach(statement => this.visitNode(statement));
+        node.body.forEach(statement => this.visitStatement(statement));
     }
 
     private visitSwitchStatement(node: SwitchStatement) {
@@ -173,10 +174,10 @@ export class SymbolTableBuilder {
 
         node.cases.forEach(caseStatement => {
             caseStatement.values.forEach(expr => this.visitExpression(expr));
-            caseStatement.body.forEach(statement => this.visitNode(statement));
+            caseStatement.body.forEach(statement => this.visitStatement(statement));
         });
 
-        node.default?.forEach(statement => this.visitNode(statement));
+        node.default?.forEach(statement => this.visitStatement(statement));
     }
 
     private visitReturnStatement(node: ReturnStatement) {
@@ -198,7 +199,7 @@ export class SymbolTableBuilder {
         this.visitFunctionCall(node.function)
     }
 
-    private visitExpression(node: ASTNode): void {
+    private visitExpression(node: Expression): void {
         switch (node.kind) {
             case "FunctionCall":
                 return this.visitFunctionCall(node as FunctionCall);

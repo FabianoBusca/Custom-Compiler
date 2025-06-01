@@ -106,11 +106,7 @@ export class Parser {
 
     parse(): boolean {
         try {
-            while (!this.isEOF()) {
-                this.ast.body.push(this.parseStatement());
-            }
-            if (this.ast.body.length > 0) this.ast.start = this.ast.body[0].start;
-            this.ast.end = this.current().end; // EOF
+            this.parseProgram();
         } catch (error) {
             if (error instanceof DayErr) {
                 return false;
@@ -221,6 +217,14 @@ export class Parser {
         this.advance();
         // TODO shouldn't be thrown here
         throw error;
+    }
+
+    private parseProgram() {
+        while (!this.isEOF()) {
+            this.ast.body.push(this.parseStatement());
+        }
+        if (this.ast.body.length > 0) this.ast.start = this.ast.body[0].start;
+        this.ast.end = this.current().end; // EOF
     }
 
     private parseStatement(): Statement {

@@ -10,6 +10,9 @@
     "parse": "tsx src/day.ts -P",
     "symbols": "tsx src/day.ts -S",
     "type": "tsx src/day.ts -T",
+    "optimize": "tsx src/day.ts -O",
+    "generate": "tsx src/day.ts -A",
+    "compile": "tsx src/day.ts -C",
     "test": "jest"
   },
   "keywords": [],

@@ -27,84 +27,7 @@ export class Lexer {
 
     tokenize(): boolean {
         try {
-            while (!this.isEOF()) {
-                this.skipWhitespace();
-                if (this.isEOF()) break;
-
-                const char = this.peek();
-                switch (char) {
-                    case '%':
-                        this.addToken(Tag.MOD, this.column, this.advance());
-                        break;
-                    case '&':
-                        this.addToken(Tag.AND, this.column, this.advance());
-                        break;
-                    case '|':
-                        this.addToken(Tag.OR, this.column, this.advance());
-                        break;
-                    case '(':
-                        this.addToken(Tag.LRP, this.column, this.advance());
-                        break;
-                    case ')':
-                        this.addToken(Tag.RRP, this.column, this.advance());
-                        break;
-                    case '[':
-                        this.addToken(Tag.LSP, this.column, this.advance());
-                        break;
-                    case ']':
-                        this.addToken(Tag.RSP, this.column, this.advance());
-                        break;
-                    case '{':
-                        this.addToken(Tag.LCP, this.column, this.advance());
-                        break;
-                    case '}':
-                        this.lexRCP();
-                        break;
-                    case ',':
-                        this.addToken(Tag.COMMA, this.column, this.advance());
-                        break;
-                    case '.':
-                        this.addToken(Tag.DOT, this.column, this.advance());
-                        break;
-                    case '+':
-                        this.lexPlus();
-                        break;
-                    case '-':
-                        this.lexMinus();
-                        break;
-                    case '*':
-                        this.lexStar();
-                        break;
-                    case '/':
-                        this.lexSlash();
-                        break;
-                    case '>':
-                        this.lexGreater();
-                        break;
-                    case '<':
-                        this.lexLess();
-                        break;
-                    case '=':
-                        this.lexEqual();
-                        break;
-                    case '!':
-                        this.lexNot();
-                        break;
-                    case '"':
-                        this.lexString();
-                        break;
-                    case "'":
-                        this.lexFString();
-                        break;
-                    case '#':
-                        this.ignoreSingleComment();
-                        break;
-                    default:
-                        if (this.isDigit(char)) this.lexNumber();
-                        else if (this.isAlpha(char)) this.lexIdentifierOrKeyword();
-                        else this.throwError(`Unexpected character: ${char}`);
-                }
-            }
+            this.lexProgram();
         } catch (error) {
             if (error instanceof DayErr) {
                 return false;
@@ -189,6 +112,87 @@ export class Lexer {
         this.advance();
         // TODO shouldn't be thrown here
         throw error;
+    }
+
+    private lexProgram() {
+        while (!this.isEOF()) {
+            this.skipWhitespace();
+            if (this.isEOF()) break;
+
+            const char = this.peek();
+            switch (char) {
+                case '%':
+                    this.addToken(Tag.MOD, this.column, this.advance());
+                    break;
+                case '&':
+                    this.addToken(Tag.AND, this.column, this.advance());
+                    break;
+                case '|':
+                    this.addToken(Tag.OR, this.column, this.advance());
+                    break;
+                case '(':
+                    this.addToken(Tag.LRP, this.column, this.advance());
+                    break;
+                case ')':
+                    this.addToken(Tag.RRP, this.column, this.advance());
+                    break;
+                case '[':
+                    this.addToken(Tag.LSP, this.column, this.advance());
+                    break;
+                case ']':
+                    this.addToken(Tag.RSP, this.column, this.advance());
+                    break;
+                case '{':
+                    this.addToken(Tag.LCP, this.column, this.advance());
+                    break;
+                case '}':
+                    this.lexRCP();
+                    break;
+                case ',':
+                    this.addToken(Tag.COMMA, this.column, this.advance());
+                    break;
+                case '.':
+                    this.addToken(Tag.DOT, this.column, this.advance());
+                    break;
+                case '+':
+                    this.lexPlus();
+                    break;
+                case '-':
+                    this.lexMinus();
+                    break;
+                case '*':
+                    this.lexStar();
+                    break;
+                case '/':
+                    this.lexSlash();
+                    break;
+                case '>':
+                    this.lexGreater();
+                    break;
+                case '<':
+                    this.lexLess();
+                    break;
+                case '=':
+                    this.lexEqual();
+                    break;
+                case '!':
+                    this.lexNot();
+                    break;
+                case '"':
+                    this.lexString();
+                    break;
+                case "'":
+                    this.lexFString();
+                    break;
+                case '#':
+                    this.ignoreSingleComment();
+                    break;
+                default:
+                    if (this.isDigit(char)) this.lexNumber();
+                    else if (this.isAlpha(char)) this.lexIdentifierOrKeyword();
+                    else this.throwError(`Unexpected character: ${char}`);
+            }
+        }
     }
 
     private lexRCP(): void {

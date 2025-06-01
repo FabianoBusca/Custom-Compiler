@@ -2,8 +2,5 @@
 << This is a multi
     line comment >>
 
-str y
-num, str = foo(str s) {
-  return(1, s)
-}
-num x, y, bool b = foo(y), false
+str x, str y
+str z = x + y

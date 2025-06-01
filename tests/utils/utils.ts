@@ -1,4 +1,4 @@
-import {Lexer, Parser, SymbolTableBuilder, TypeChecker} from "@src/compiler";
+import {Lexer, Optimizer, Parser, SymbolTableBuilder, TypeChecker} from "@src/compiler";
 import {DayErr} from "@src/utils";
 import {Program, SymbolTable, Token} from "@src/data";
 
@@ -121,4 +121,33 @@ export function typeCheckerTest(source: string, errors?: DayErr[]) {
     } else {
         expect(typeCheckerErrors.length).toEqual(0);
     }
+}
+
+export function optimizerTest(source: string, expected: Program) {
+    const lexer = new Lexer(source);
+    lexer.tokenize();
+    if (lexer.getErrors().length > 0) {
+        throw new Error("Lexer failed with errors")
+    }
+    const parser = new Parser(lexer.getTokens(), source);
+    parser.parse();
+    if (parser.getErrors().length > 0) {
+        throw new Error("Parser failed with errors")
+    }
+    const ast = parser.getAST();
+    const symbolTableBuilder = new SymbolTableBuilder(ast, source);
+    symbolTableBuilder.build();
+    if (symbolTableBuilder.getErrors().length > 0) {
+        throw new Error("Symbol Table Builder failed with errors")
+    }
+    const typeChecker = new TypeChecker(ast, symbolTableBuilder.getSymbolTable(), source);
+    typeChecker.check();
+    if (symbolTableBuilder.getErrors().length > 0) {
+        throw new Error("Type Checker failed with errors")
+    }
+    const optimizer = new Optimizer(ast);
+    optimizer.optimize();
+
+    const optimizedAST = optimizer.getOptimizedAST();
+    expect(optimizedAST).toEqual(expected);
 }
