@@ -81,9 +81,9 @@ export class AssemblyGenerator {
             case "F-String":
                 return ""; // Placeholder for now
             case "Array":
-                return ""; // Placeholder for now
+                return this.visitArray(node as Array);
             case "ArrayElement":
-                return ""; // Placeholder for now
+                return this.visitArrayElement(node as ArrayElement);
             default:
                 throw new Error(`Unexpected node type '${node.kind}' in expression.`);
         }
@@ -245,8 +245,67 @@ export class AssemblyGenerator {
     }
 
     private visitArray(node: ArrayNode): string {
-        
+        const registries = [];
+        node.elements.forEach(el =>  registries.push(this.visitExpression(el)))
+      
+        const elementSize = node.elementType === "num" ? 8 : 8; // assume 64-bit for all for now later symbol table will be incorporated
+        const totalSize = elementSize * registries.length;
+    
+        const addrReg = this.newReg(false); // xN for malloc return
+        const sizeReg = this.newReg(false);
+    
+        this.assembly.push(`    mov ${sizeReg}, #${totalSize}`);
+        this.assembly.push(`    mov x0, ${sizeReg}`);
+        this.assembly.push(`    bl malloc`);
+        this.assembly.push(`    mov ${addrReg}, x0`);
+    
+        this.freeReg(sizeReg);
+    
+        registries.forEach((reg, index) => {
+            const offset = index * elementSize;
+    
+            const offsetReg = this.newReg(false);
+            this.assembly.push(`    mov ${offsetReg}, #${offset}`);
+            this.assembly.push(`    add ${offsetReg}, ${addrReg}, ${offsetReg}`);
+    
+            if (node.elementType === "num") {
+                this.assembly.push(`    str ${reg}, [${offsetReg}]`);
+            } else {
+                this.assembly.push(`    str ${reg}, [${offsetReg}]`);
+            }
+    
+            this.freeReg(reg);
+            this.freeReg(offsetReg);
+        });
+    
+        return addrReg;
     }
+
+    private visitArrayElement(node: ArrayElement): string {
+        const baseReg = this.visitExpression(node.array);
+        const indexReg = this.visitExpression(node.index);
+    
+        const offsetReg = this.newReg(false);
+        const addrReg = this.newReg(false);
+        const resultReg = this.newReg(/* depends on type, assume float for now */ true);
+    
+        const elementSize = 8; // Assume 64-bit elements
+    
+       
+        this.assembly.push(`    mov ${offsetReg}, #${elementSize}`);
+        this.assembly.push(`    mul ${offsetReg}, ${indexReg}, ${offsetReg}`);
+        this.assembly.push(`    add ${addrReg}, ${baseReg}, ${offsetReg}`);
+    
+        this.assembly.push(`    ldr ${resultReg}, [${addrReg}]`);
+    
+        this.freeReg(baseReg);
+        this.freeReg(indexReg);
+        this.freeReg(offsetReg);
+        this.freeReg(addrReg);
+    
+        return resultReg;
+}
+
 
     public getAssembly() {
         return this.assembly;
